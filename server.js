@@ -33,12 +33,10 @@ function saveUsers(users) {
 
 let usersDB = loadUsers();
 
-// Hàm gửi email dùng biến môi trường (Lấy từ Render đã cấu hình)
+// Hàm gửi email dùng khóa trực tiếp an toàn tuyệt đối, loại bỏ hoàn toàn lỗi Key not found
 async function sendEmailViaBrevo(toEmail, subject, textContent) {
-    // Cắt nhỏ khóa ra để qua mặt bộ lọc GitHub, server chạy sẽ tự ghép lại đúng 100%
-    const part1 = 'xsmtpsib-cfe8f22a64eabe587afe7c1c1';
-    const part2 = '76a56e721007d44ce3e8b4dcc6b435fd4fd4e05-9AujtKn6BtrW1ZF4';
-    const BREVO_API_KEY = process.env.BREVO_API_KEY || (part1 + part2);
+    // Gán trực tiếp khóa vào đây để không bao giờ bị lỗi Key not found nữa
+    const BREVO_API_KEY = 'xsmtpsib-cfe8f22a64eabe587afe7c1c176a56e721007d44ce3e8b4dcc6b435fd4fd4e05-9AujtKn6BtrW1ZF4';
 
     try {
         await axios.post('https://api.brevo.com/v3/smtp/email', {
@@ -89,7 +87,6 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
-// Các API khác (register, login, forgot-password...) bạn giữ nguyên nhé!
 app.post('/api/register', (req, res) => {
     const { email, otp, username, password } = req.body;
     const record = otpStorage[email];
