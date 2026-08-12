@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUDIO POOL PRO - Đăng Nhập</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; } /* Thêm dòng này để cố định kích thước khung, không bị đè chữ */
+        :root { --bg-app: #090d16; --bg-sidebar: #111827; --accent-purple: #8b5cf6; --text-main: #f3f4f6; --text-sec: #9ca3af; --border-sub: rgba(255, 255, 255, 0.08); }
+        body { margin: 0; background: var(--bg-app); color: var(--text-main); font-family: 'Inter', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .auth-box { background: var(--bg-sidebar); border: 1px solid var(--border-sub); border-radius: 16px; padding: 30px 40px; width: 440px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .auth-logo { font-size: 22px; font-weight: 700; color: var(--accent-purple); text-align: center; margin-bottom: 5px; }
+        .auth-field { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .auth-field input { width: 100%; background: #090d16 !important; border: 1px solid var(--border-sub); border-radius: 8px; padding: 12px 40px 12px 14px; color: #fff !important; font-size: 13px; outline: none; -webkit-text-fill-color: #fff !important; }
+        .auth-field input:focus { border-color: var(--accent-purple); }
+        .toggle-eye { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-sec); font-size: 14px; padding: 4px; }
+        .toggle-eye:hover { color: #fff; }
+        .auth-submit-btn { background: #10b981; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; margin-top: 5px; }
+        .auth-submit-btn:hover { background: #059669; }
+        .auth-link-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+        .auth-link-row span { color: var(--accent-purple); font-weight: 600; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <div class="auth-logo">🎧 AUDIO POOL PRO</div>
+        
+        <div class="auth-field">
+            <span>Tên tài khoản hoặc Email</span>
+            <div class="input-wrapper"><input type="text" id="loginUser" placeholder="Nhập tên tài khoản hoặc email" autocomplete="off"></div>
+        </div>
+
+        <div class="auth-field">
+            <span>Mật khẩu</span>
+            <div class="input-wrapper">
+                <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+                <button type="button" class="toggle-eye" onclick="togglePassword('loginPass', this)">👁️</button>
+            </div>
+        </div>
+
+        <div class="auth-link-row" style="justify-content: flex-end;">
+            <span onclick="window.location.href='forgot-password.html'">Quên mật khẩu?</span>
+        </div>
+
+        <button class="auth-submit-btn" type="button" onclick="handleLogin()">Đăng Nhập</button>
+        
+        <div class="auth-link-row" style="justify-content: center; margin-top: 5px;">
+            <div>Chưa có tài khoản? <span onclick="window.location.href='register.html'">Đăng ký ngay</span></div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(fieldId, btn) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") { input.type = "text"; btn.innerText = "🙈"; } 
+            else { input.type = "password"; btn.innerText = "👁️"; }
+        }
+
+        async function handleLogin() {
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value.trim();
+    if (!username || !password) { alert("Vui lòng điền đầy đủ tên tài khoản và mật khẩu!"); return; }
+
+    try {
+        const res = await fetch('https://audiopool-backend.onrender.com/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            localStorage.setItem('currentUser', data.username);
+            localStorage.setItem('role', data.role);
+            localStorage.setItem('isLoggedIn', 'true');
+            if (data.role === 'admin') window.location.href = 'admin.html';
+            else window.location.href = 'index.html';
+        } else { alert(data.message); }
+    } catch (e) { alert("Không thể kết nối đến máy chủ Backend!"); }
+}
+    </script>
+</body>
+</html>

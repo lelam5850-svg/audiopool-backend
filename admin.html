@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Quản Trị - Admin Tổng AUDIO POOL PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-app: #090d16;
+            --bg-sidebar: #111827;
+            --accent-purple: #8b5cf6;
+            --text-main: #f3f4f6;
+            --text-sec: #9ca3af;
+            --border-sub: rgba(255, 255, 255, 0.08);
+        }
+        body {
+            margin: 0; background: var(--bg-app); color: var(--text-main);
+            font-family: 'Inter', sans-serif; padding: 40px;
+        }
+        .admin-container {
+            max-width: 900px; margin: 0 auto;
+            background: var(--bg-sidebar); border: 1px solid var(--border-sub);
+            border-radius: 16px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        h2 { color: var(--accent-purple); margin-top: 0; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-sub); padding-bottom: 15px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--border-sub); padding: 12px; text-align: left; font-size: 14px; }
+        th { background: rgba(255, 255, 255, 0.03); color: var(--text-sec); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        td { color: var(--text-main); }
+        .badge-admin { color: #f43f5e; font-weight: 700; }
+        .badge-user { color: #10b981; font-weight: 600; }
+        .logout-btn { background: #ef4444; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .logout-btn:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <div>
+                <h2>🛡️ TRANG QUẢN TRỊ - ADMIN TỔNG</h2>
+                <p style="margin: 5px 0 0; color: var(--text-sec); font-size: 13px;">Xin chào quản trị viên: <b id="admin-name" style="color: #fff;"></b></p>
+            </div>
+            <button class="logout-btn" onclick="logout()">Đăng Xuất</button>
+        </div>
+
+        <h3>Danh sách tài khoản trong hệ thống:</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên tài khoản</th>
+                    <th>Email</th>
+                    <th>Phân quyền (Role)</th>
+                </tr>
+            </thead>
+            <tbody id="user-list">
+                <!-- Dữ liệu user sẽ được nạp tự động qua JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Kiểm tra quyền Admin khi vừa vào trang
+        const role = localStorage.getItem('role');
+        const currentUser = localStorage.getItem('currentUser');
+
+        if (role !== 'admin') {
+            alert('Cảnh báo: Bạn không có quyền truy cập trang quản trị này!');
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('admin-name').innerText = currentUser;
+            loadUsers();
+        }
+
+        // Lấy danh sách user từ Server Backend
+        async function loadUsers() {
+            try {
+                const res = await fetch('https://audiopool-backend.onrender.com/api/admin/users');
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.getElementById('user-list');
+                    tbody.innerHTML = '';
+                    data.users.forEach(u => {
+                        const roleBadge = u.role === 'admin' 
+                            ? `<span class="badge-admin">👑 ADMIN TỔNG</span>` 
+                            : `<span class="badge-user">👤 User thường</span>`;
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${u.username}</td>
+                                <td>${u.email}</td>
+                                <td>${roleBadge}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (e) {
+                alert('Không thể tải danh sách tài khoản từ máy chủ!');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundStudio - Trang Chính Mixer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-app: #090d16;
+            --bg-sidebar: #111827;
+            --bg-track: #1b2436;
+            --accent-purple: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --accent-pink: #ec4899;
+            --text-main: #f3f4f6;
+            --text-sec: #9ca3af;
+            --border-sub: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; background: var(--bg-app); color: var(--text-main);
+            font-family: 'Inter', sans-serif; height: 100vh; width: 100vw; overflow: hidden; display: flex;
+        }
+
+        .studio-sidebar {
+            width: 320px; min-width: 320px; max-width: 320px; background: var(--bg-sidebar); border-right: 1px solid var(--border-sub);
+            display: flex; flex-direction: column; padding: 20px; gap: 14px; height: 100vh; flex-shrink: 0; overflow: hidden;
+        }
+        .studio-logo { font-size: 18px; font-weight: 700; color: var(--accent-purple); letter-spacing: -0.5px; flex-shrink: 0; }
+
+        .studio-drawer {
+            background: rgba(0,0,0,0.25); border: 1px solid var(--border-sub);
+            border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow: hidden;
+        }
+        
+        .lib-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-sub); padding-bottom: 8px; flex-shrink: 0; }
+        .lib-title { font-size: 12px; color: var(--text-main); font-weight: 700; text-transform: uppercase; }
+        .lib-upload-btn {
+            background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .lib-upload-btn:hover { background: var(--accent-purple); color: #fff; }
+        .lib-upload-btn input { display: none; }
+
+        .lib-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .lib-btn {
+            flex: 1; background: var(--bg-track); border: 1px solid var(--border-sub); color: var(--text-sec);
+            padding: 6px 0; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .lib-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        
+        .lib-btn.primary { 
+            background: var(--accent-purple) !important; color: #fff !important; border: none !important;
+            width: 100% !important; height: 34px !important; min-height: 34px !important; max-height: 34px !important;
+            padding: 0 !important; font-size: 12px !important; font-weight: 700 !important; margin-top: 4px;
+            box-shadow: 0 2px 8px var(--accent-glow); display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer; flex-shrink: 0;
+        }
+        .lib-btn.primary:hover { background: #7c3aed !important; }
+
+        .lib-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 80px; }
+        .lib-item {
+            background: var(--bg-track); padding: 8px 10px; border-radius: 8px; font-size: 12px;
+            border: 1px solid var(--border-sub); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.15s;
+        }
+        .lib-item:hover { background: rgba(255,255,255,0.05); }
+        .lib-item.selected { border-color: var(--accent-purple); background: rgba(139, 92, 246, 0.1); }
+        .lib-badge {
+            width: 18px; height: 18px; border-radius: 50%; background: var(--accent-purple); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;
+        }
+        .lib-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+        .trash-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-sub); padding-bottom: 6px; flex-shrink: 0; }
+        .trash-clear-btn { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .trash-clear-btn:hover { background: #ef4444; color: #fff; }
+
+        .add-channel-btn {
+            background: #10b981; border: none; color: #fff; padding: 10px; border-radius: 10px;
+            font-weight: 700; font-size: 12px; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: 0.2s; flex-shrink: 0;
+        }
+        .add-channel-btn:hover { background: #059669; }
+
+        .trash-container { overflow-y: auto; max-height: 100px; display: flex; flex-direction: column; gap: 4px; }
+        .trash-item {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 6px 10px; border-radius: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #fca5a5;
+        }
+        .restore-btn { background: #ef4444; border: none; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+        .restore-btn:hover { background: #dc2626; }
+
+        .studio-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: calc(100vw - 320px); }
+        
+        .studio-header {
+            background: var(--bg-sidebar); border-bottom: 1px solid var(--border-sub); padding: 16px 32px;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .studio-header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+
+        .master-audio-controls { display: flex; gap: 8px; align-items: center; }
+        .master-btn {
+            background: var(--bg-track); border: 1px solid var(--border-sub); color: var(--text-main);
+            padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+        }
+        .master-btn:hover { background: rgba(255,255,255,0.1); }
+        .master-btn.active-mute { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
+        .master-btn.active-unmute { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #6ee7b7; }
+
+        .studio-content { padding: 24px 32px; flex: 1; overflow-y: auto; }
+
+        .toolbar-rack { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
+        .search-box {
+            background: var(--bg-sidebar); border: 1px solid var(--border-sub); border-radius: 8px;
+            padding: 8px 14px; color: #fff; font-size: 12px; outline: none; width: 260px; transition: 0.2s;
+        }
+        .search-box:focus { border-color: var(--accent-purple); box-shadow: 0 0 8px var(--accent-glow); }
+
+        .batch-del-btn {
+            background: #ef4444; border: none; color: #fff; padding: 8px 16px; border-radius: 8px;
+            font-weight: 600; font-size: 12px; cursor: pointer; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3); transition: 0.2s; display: none;
+        }
+        .batch-del-btn.show { display: inline-block; }
+
+        .studio-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .studio-stat-box {
+            background: var(--bg-sidebar); border: 1px solid var(--border-sub); border-radius: 12px;
+            padding: 14px 20px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .studio-stat-box span { font-size: 11px; color: var(--text-sec); text-transform: uppercase; font-weight: 600; }
+        .studio-stat-box strong { font-size: 20px; color: #fff; }
+
+        .tracks-rack { display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; }
+        .track-line {
+            background: var(--bg-track); border: 1px solid var(--border-sub); border-radius: 12px;
+            padding: 12px 18px; display: flex; align-items: center; gap: 16px; transition: 0.2s; user-select: none; cursor: grab;
+        }
+        .track-line:active { cursor: grabbing; }
+        .track-line.dragging { opacity: 0.4; border: 2px dashed var(--accent-purple); }
+        .track-line.active-track { border-color: var(--accent-purple); box-shadow: 0 0 15px var(--accent-glow); background: linear-gradient(90deg, var(--bg-track), rgba(139, 92, 246, 0.08)); }
+
+        .tl-select-checkbox { width: 16px; height: 16px; accent-color: var(--accent-pink); cursor: pointer; flex-shrink: 0; display: none; }
+        .tl-select-checkbox.show { display: inline-block; }
+
+        .tl-key-badge { font-weight: 700; font-size: 12px; color: #fff; background: var(--accent-purple); padding: 6px 12px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .tl-key-input { background: transparent; border: 1px dashed #fff; color: #fff; font-size: 12px; font-weight: 700; width: 60px; padding: 2px 4px; outline: none; border-radius: 4px; }
+        
+        .tl-play-btn {
+            width: 40px; height: 40px; border-radius: 10px; background: var(--accent-purple); border: none;
+            color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+            box-shadow: 0 2px 8px var(--accent-glow); transition: 0.2s; flex-shrink: 0;
+        }
+        .tl-play-btn.stop-mode { background: var(--accent-pink); box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4); }
+
+        .tl-file-info { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .tl-file-name { font-size: 13px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .tl-progress-area { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-sec); }
+        .tl-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+        .tl-bar-fill { height: 100%; width: 0%; background: var(--accent-purple); transition: width 0.1s linear; }
+
+        .tl-upload-box {
+            background: rgba(255,255,255,0.03); border: 1px dashed var(--border-sub);
+            padding: 8px 14px; border-radius: 8px; font-size: 11px; color: var(--text-sec); cursor: pointer; flex-shrink: 0; transition: 0.2s;
+        }
+        .tl-upload-box:hover { border-color: var(--accent-purple); color: #fff; }
+        .tl-upload-box input { display: none; }
+
+        .tl-vol-box { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-sec); width: 140px; flex-shrink: 0; }
+        .tl-vol-slider { flex: 1; accent-color: var(--accent-purple); cursor: pointer; }
+
+        .tl-gear-btn { background: transparent; border: none; color: var(--text-sec); cursor: pointer; font-size: 16px; flex-shrink: 0; transition: 0.2s; }
+        .tl-gear-btn:hover { color: #fff; }
+
+        .studio-footer {
+            background: var(--bg-sidebar); border-top: 1px solid var(--border-sub); padding: 14px 32px;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .studio-abort-btn { background: var(--accent-pink); border: none; color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 12px; }
+
+        .studio-toast {
+            position: fixed; bottom: 24px; right: 24px; background: var(--bg-sidebar); border: 1px solid var(--accent-purple);
+            color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 13px; font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(80px); opacity: 0; transition: 0.3s; z-index: 3000;
+        }
+        .studio-toast.show { transform: translateY(0); opacity: 1; }
+
+        .studio-modal-wrap {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .studio-modal-wrap.show { display: flex; }
+        .studio-modal-box {
+            background: var(--bg-sidebar); border: 1px solid var(--border-sub); border-radius: 16px;
+            padding: 24px; width: 380px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        }
+        .studio-modal-box h3 { margin: 0; font-size: 16px; color: #fff; }
+        .modal-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; }
+        .modal-field select, .modal-field input { background: var(--bg-app); border: 1px solid var(--border-sub); border-radius: 8px; padding: 10px; color: #fff; font-size: 12px; outline: none; }
+        .modal-toggle-line { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-sec); text-transform: uppercase; }
+        .studio-switch { width: 40px; height: 22px; background: rgba(255,255,255,0.1); border-radius: 11px; position: relative; cursor: pointer; border: none; transition: 0.2s; }
+        .studio-switch.on { background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-glow); }
+        .studio-switch span { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.2s; }
+        .studio-switch.on span { transform: translateX(18px); }
+        .modal-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+        .m-btn-base { padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 12px; }
+        .m-btn-base.dim { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .m-btn-base.main { background: var(--accent-purple); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <!-- Kiểm tra bảo mật: Chưa đăng nhập tự động đá về trang login.html -->
+    <script>
+        if(localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <aside class="studio-sidebar">
+        <div class="studio-logo">🎧 AUDIO POOL PRO</div>
+
+        <button class="add-channel-btn" type="button" onclick="promptAddChannel()">+ THÊM KÊNH MỚI</button>
+
+        <div class="studio-drawer" style="flex: 2;">
+            <div class="lib-header">
+                <span class="lib-title">📁 Thư Viện Tệp</span>
+                <label class="lib-upload-btn">
+                    + Tải Nhạc
+                    <input type="file" multiple accept="audio/*" onchange="uploadToLibrary(event)">
+                </label>
+            </div>
+            
+            <div class="lib-actions">
+                <button class="lib-btn" onclick="selectAllLibrary()">Chọn Tất Cả</button>
+                <button class="lib-btn" onclick="clearLibrarySelection()">Bỏ Chọn</button>
+            </div>
+            
+            <div class="lib-container" id="libraryContainer">
+                <div style="font-size: 11px; color: var(--text-sec); padding: 10px; text-align: center;">Trống. Bấm [+ Tải Nhạc].</div>
+            </div>
+
+            <button class="lib-btn primary" onclick="applyLibraryToDecks()">🚀 ÁP DỤNG VÀO KÊNH</button>
+        </div>
+
+        <div class="studio-drawer" style="max-height: 140px;">
+            <div class="trash-header-row">
+                <span class="lib-title">🗑️ Thùng Rác</span>
+                <button class="trash-clear-btn" type="button" onclick="clearTrashBin()">🧹 Dọn Dẹp</button>
+            </div>
+            <div class="trash-container" id="trashContainer">
+                <div style="font-size: 11px; color: var(--text-sec);">Thùng rác trống</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="studio-main">
+        <header class="studio-header">
+            <h1>Bàn Điều Khiển Trackline Mixer</h1>
+            <div class="master-audio-controls">
+                <button class="master-btn" id="btnMuteAll" type="button" onclick="setMasterMute(true)">🔇 Tắt Tổng</button>
+                <button class="master-btn" id="btnUnmuteAll" type="button" onclick="setMasterMute(false)">🔊 Mở Tổng</button>
+                <button class="master-btn" style="background:rgba(239,68,68,0.2); color:#fca5a5;" type="button" onclick="handleLogout()">🚪 Đăng Xuất</button>
+                <span id="liveClock" style="font-size: 13px; color: var(--text-sec); font-weight: 600; margin-left: 10px;">00:00:00</span>
+            </div>
+        </header>
+
+        <section class="studio-content" id="mainWorkspace">
+            <div class="studio-stats">
+                <div class="studio-stat-box">
+                    <span>Đang Hoạt Động</span>
+                    <strong id="statPlaying">0</strong>
+                </div>
+                <div class="studio-stat-box">
+                    <span>Tệp Đã Nạp</span>
+                    <strong id="statLoaded">0</strong>
+                </div>
+                <div class="studio-stat-box">
+                    <span>Tổng Số Kênh</span>
+                    <strong id="statTotalChannels" style="color: #34d399;">0</strong>
+                </div>
+            </div>
+
+            <div class="toolbar-rack">
+                <input type="text" class="search-box" id="searchChannelInput" placeholder="🔍 Tìm kiếm kênh (nhập tên phím hoặc file)..." oninput="renderGrid()">
+                <button class="batch-del-btn" id="batchDelBtn" type="button" onclick="deleteSelectedChannels()">🗑️ XÓA KÊNH ĐÃ CHỌN</button>
+            </div>
+
+            <div class="tracks-rack" id="decksGrid"></div>
+        </section>
+
+        <footer class="studio-footer">
+            <div style="font-size: 13px; color: var(--text-sec);" id="masterStatusText">Trạng thái: Đang chờ lệnh...</div>
+            <button class="studio-abort-btn" type="button" onclick="stopAllAudio()">DỪNG TOÀN BỘ (ESC)</button>
+        </footer>
+    </main>
+
+    <!-- Modal Cài đặt -->
+    <div class="studio-modal-wrap" id="settingsModal" onclick="closeModalOutside(event)">
+        <div class="studio-modal-box">
+            <h3 id="modalTitle">CÀI ĐẶT KÊNH</h3>
+            <div class="modal-field"><span>Fade In (Giây)</span><input type="number" id="settingFadeIn" value="0" min="0" step="0.5"></div>
+            <div class="modal-field"><span>Fade Out (Giây)</span><input type="number" id="settingFadeOut" value="0" min="0" step="0.5"></div>
+            <div class="modal-toggle-line">
+                <span>Lặp Lại (Loop)</span>
+                <button class="studio-switch" id="settingLoop" type="button" onclick="toggleSwitchBtn(this)"><span></span></button>
+            </div>
+            <div class="modal-btn-row">
+                <button class="m-btn-base dim" type="button" onclick="closeModal()">Hủy</button>
+                <button class="m-btn-base main" type="button" onclick="saveModalSettings()">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="studio-toast" id="toastMessage">Thành công!</div>
+
+    <script>
+        function handleLogout() {
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = 'login.html';
+        }
+
+        const defaultKeys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Q", "W", "E", "R", "T", "Y"];
+        let decksData = [];
+        let trashBin = [];
+        let currentActiveId = null;
+        let editingDeckId = null;
+        let activeFadeTimers = {};
+        let isSelectionMode = false;
+        let draggedIndex = null;
+        let sessionLibrary = []; 
+        let selectedLibIds = []; 
+        let isMasterMuted = false;
+
+        function showToast(msg) {
+            const t = document.getElementById('toastMessage');
+            if (!t) return;
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function setMasterMute(muteState) {
+            isMasterMuted = muteState;
+            decksData.forEach(deck => {
+                if (deck._activeAudio) {
+                    deck._activeAudio.muted = isMasterMuted;
+                }
+            });
+
+            const btnMute = document.getElementById('btnMuteAll');
+            const btnUnmute = document.getElementById('btnUnmuteAll');
+            if (isMasterMuted) {
+                if (btnMute) btnMute.classList.add('active-mute');
+                if (btnUnmute) btnUnmute.classList.remove('active-unmute');
+                showToast("🔇 Đã tắt âm thanh tổng!");
+            } else {
+                if (btnMute) btnMute.classList.remove('active-mute');
+                if (btnUnmute) btnUnmute.classList.add('active-unmute');
+                showToast("🔊 Đã mở âm thanh tổng!");
+            }
+        }
+
+        const workspace = document.getElementById('mainWorkspace');
+        if (workspace) {
+            workspace.addEventListener('click', (e) => {
+                if (!e.target.closest('.track-line') && !e.target.closest('.batch-del-btn')) {
+                    if (isSelectionMode) {
+                        isSelectionMode = false;
+                        document.querySelectorAll('.tl-select-checkbox').forEach(cb => {
+                            cb.checked = false;
+                            cb.classList.remove('show');
+                        });
+                        const delBtn = document.getElementById('batchDelBtn');
+                        if (delBtn) delBtn.classList.remove('show');
+                    }
+                }
+            });
+        }
+
+        function promptAddChannel() {
+            let keyInput = prompt("Nhập một phím bất kỳ chưa gán (Ví dụ: A, Z, X, 8, F...):");
+            if(!keyInput) return;
+            keyInput = keyInput.trim().toUpperCase();
+
+            const exists = decksData.some(d => d.rawKey === keyInput);
+            if(exists) {
+                alert(`Phím [${keyInput}] đã tồn tại trên bàn điều khiển!`);
+                return;
+            }
+
+            decksData.push({
+                id: Date.now() + Math.random(),
+                rawKey: keyInput,
+                keyName: `KEY [${keyInput}]`,
+                fileName: "Chưa chọn tệp",
+                fileObj: null,
+                isPlaying: false,
+                volume: 76,
+                fadeIn: 0,
+                fadeOut: 0,
+                loop: false
+            });
+
+            renderGrid();
+            saveToStorage();
+            showToast(`Đã thêm kênh [${keyInput}]!`);
+        }
+
+        function deleteSelectedChannels() {
+            const checkboxes = document.querySelectorAll('.tl-select-checkbox:checked');
+            if(checkboxes.length === 0) {
+                alert("Vui lòng tick chọn ít nhất một kênh cần xóa!");
+                return;
+            }
+
+            if(confirm(`Bạn có chắc chắn muốn xóa ${checkboxes.length} kênh đã chọn không?`)) {
+                const selectedItems = Array.from(checkboxes).map(cb => {
+                    const id = parseFloat(cb.dataset.id);
+                    const index = decksData.findIndex(d => d.id === id);
+                    return { id, index };
+                });
+
+                selectedItems.sort((a, b) => b.index - a.index);
+
+                selectedItems.forEach(item => {
+                    const deckIdx = item.index;
+                    if(deckIdx > -1) {
+                        const deck = decksData[deckIdx];
+                        if(deck._activeAudio) deck._activeAudio.pause();
+                        trashBin.unshift({ deck, originalIndex: deckIdx });
+                        decksData.splice(deckIdx, 1);
+                    }
+                });
+
+                isSelectionMode = false;
+                const delBtn = document.getElementById('batchDelBtn');
+                if (delBtn) delBtn.classList.remove('show');
+
+                renderGrid();
+                renderTrash();
+                saveToStorage();
+                showToast(`Đã chuyển các kênh vào thùng rác!`);
+            }
+        }
+
+        function restoreChannel(trashId) {
+            const trashIdx = trashBin.findIndex(t => t.deck.id === trashId);
+            if(trashIdx > -1) {
+                const item = trashBin.splice(trashIdx, 1)[0];
+                let restoreIdx = item.originalIndex;
+                if (restoreIdx > decksData.length) restoreIdx = decksData.length;
+                decksData.splice(restoreIdx, 0, item.deck);
+                renderGrid();
+                renderTrash();
+                saveToStorage();
+                showToast(`Đã khôi phục ${item.deck.keyName} về đúng vị trí cũ!`);
+            }
+        }
+
+        function clearTrashBin() {
+            if(trashBin.length === 0) {
+                showToast("Thùng rác đã trống sẵn rồi!");
+                return;
+            }
+            if(confirm("Bạn có chắc chắn muốn dọn dẹp và xóa vĩnh viễn toàn bộ các kênh trong thùng rác không?")) {
+                trashBin = [];
+                renderTrash();
+                showToast("🧹 Đã dọn dẹp thùng rác vĩnh viễn!");
+            }
+        }
+
+        function renderTrash() {
+            const trashBox = document.getElementById('trashContainer');
+            if(!trashBox) return;
+            if(trashBin.length === 0) {
+                trashBox.innerHTML = `<div style="font-size: 11px; color: var(--text-sec);">Thùng rác trống</div>`;
+                return;
+            }
+            trashBox.innerHTML = trashBin.map(item => `
+                <div class="trash-item">
+                    <span>${item.deck.keyName} (${item.deck.fileName})</span>
+                    <button class="restore-btn" onclick="restoreChannel(${item.deck.id})">Khôi Phục</button>
+                </div>
+            `).join('');
+        }
+
+        function uploadToLibrary(event) {
+            const files = Array.from(event.target.files);
+            if(files.length === 0) return;
+
+            files.forEach(f => {
+                const existing = sessionLibrary.find(item => item.name === f.name);
+                if (!existing) {
+                    sessionLibrary.push({ id: Date.now() + Math.random(), name: f.name, file: f });
+                } else {
+                    existing.file = f;
+                }
+            });
+            renderLibrary();
+            showToast(`Đã nạp ${files.length} tệp vào Thư viện!`);
+            event.target.value = '';
+        }
+
+        function renderLibrary() {
+            const container = document.getElementById('libraryContainer');
+            if(!container) return;
+            if(sessionLibrary.length === 0) {
+                container.innerHTML = `<div style="font-size: 11px; color: var(--text-sec); padding: 10px; text-align: center;">Trống. Bấm [+ Tải Nhạc].</div>`;
+                return;
+            }
+            
+            container.innerHTML = sessionLibrary.map(item => {
+                const selIndex = selectedLibIds.indexOf(item.id);
+                const isSelected = selIndex !== -1;
+                const badgeHtml = isSelected ? `<div class="lib-badge">${selIndex + 1}</div>` : '';
+                
+                return `
+                    <div class="lib-item ${isSelected ? 'selected' : ''}" onclick="toggleLibItem(${item.id})">
+                        ${badgeHtml}
+                        <div class="lib-name" title="${item.name}">${item.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLibItem(id) {
+            const idx = selectedLibIds.indexOf(id);
+            if(idx > -1) {
+                selectedLibIds.splice(idx, 1);
+            } else {
+                selectedLibIds.push(id);
+            }
+            renderLibrary();
+        }
+
+        function selectAllLibrary() {
+            if(sessionLibrary.length === 0) return;
+            selectedLibIds = sessionLibrary.map(item => item.id);
+            renderLibrary();
+        }
+
+        function clearLibrarySelection() {
+            selectedLibIds = [];
+            renderLibrary();
+        }
+
+        function applyLibraryToDecks() {
+            if(selectedLibIds.length === 0) {
+                alert("Vui lòng click chọn ít nhất 1 bài trong Thư viện để áp dụng!");
+                return;
+            }
+
+            for(let i = 0; i < selectedLibIds.length; i++) {
+                if(i >= decksData.length) break;
+                
+                const libItem = sessionLibrary.find(l => l.id === selectedLibIds[i]);
+                if(libItem && libItem.file) {
+                    const deck = decksData[i];
+                    if(deck._activeAudio) { deck._activeAudio.pause(); }
+                    
+                    deck.fileName = libItem.name;
+                    deck.fileObj = libItem.file;
+                    deck.isPlaying = false;
+                }
+            }
+            
+            selectedLibIds = [];
+            renderLibrary();
+            renderGrid();
+            saveToStorage();
+            showToast("🚀 Đã gán nhạc vào các kênh theo thứ tự chọn!");
+        }
+
+        function saveToStorage() {
+            const saveData = decksData.map(d => ({
+                id: d.id, rawKey: d.rawKey, keyName: d.keyName, volume: d.volume, fadeIn: d.fadeIn, fadeOut: d.fadeOut, loop: d.loop
+            }));
+            localStorage.setItem('studio_precision_config', JSON.stringify(saveData));
+        }
+
+        function loadFromStorage() {
+            const savedDecks = localStorage.getItem('studio_precision_config');
+            if (savedDecks) {
+                try {
+                    const parsed = JSON.parse(savedDecks);
+                    return parsed.map(item => ({
+                        id: item.id,
+                        rawKey: item.rawKey || "1",
+                        keyName: item.keyName || `KEY [${item.rawKey || "1"}]`,
+                        fileName: "Chưa chọn tệp",
+                        fileObj: null,
+                        isPlaying: false,
+                        volume: item.volume !== undefined ? item.volume : 76,
+                        fadeIn: item.fadeIn !== undefined ? item.fadeIn : 0,
+                        fadeOut: item.fadeOut !== undefined ? item.fadeOut : 0,
+                        loop: item.loop || false
+                    }));
+                } catch(e) {}
+            }
+            return defaultKeys.map((key, index) => ({
+                id: index + 1,
+                rawKey: key,
+                keyName: `KEY [${key}]`,
+                fileName: "Chưa chọn tệp",
+                fileObj: null,
+                isPlaying: false,
+                volume: 76,
+                fadeIn: 0,
+                fadeOut: 0,
+                loop: false
+            }));
+        }
+
+        decksData = loadFromStorage();
+
+        function renderGrid() {
+            const grid = document.getElementById('decksGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const searchInput = document.getElementById('searchChannelInput');
+            const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+            const filteredDecks = decksData.filter(deck => {
+                if (!searchKeyword) return true;
+                const matchKey = deck.keyName.toLowerCase().includes(searchKeyword) || deck.rawKey.toLowerCase().includes(searchKeyword);
+                const matchFile = deck.fileName.toLowerCase().includes(searchKeyword);
+                return matchKey || matchFile;
+            });
+
+            filteredDecks.forEach((deck) => {
+                const index = decksData.indexOf(deck);
+                const line = document.createElement('div');
+                line.className = `track-line ${deck.isPlaying ? 'active-track' : ''}`;
+                line.draggable = true;
+                line.dataset.index = index;
+
+                line.addEventListener('dragstart', (e) => {
+                    draggedIndex = index;
+                    e.dataTransfer.effectAllowed = 'move';
+                    setTimeout(() => line.classList.add('dragging'), 0);
+                });
+                line.addEventListener('dragend', () => {
+                    line.classList.remove('dragging');
+                    draggedIndex = null;
+                });
+                line.addEventListener('dragover', (e) => { e.preventDefault(); });
+                line.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedIndex === null || draggedIndex === index) return;
+                    const movedItem = decksData.splice(draggedIndex, 1)[0];
+                    decksData.splice(index, 0, movedItem);
+                    renderGrid();
+                    saveToStorage();
+                    showToast("Đã đổi vị trí kênh thành công!");
+                });
+
+                let pressTimer = null;
+                line.addEventListener('mousedown', (e) => {
+                    if(e.target.closest('.tl-key-badge') || e.target.closest('button') || e.target.closest('input')) return;
+                    pressTimer = setTimeout(() => {
+                        isSelectionMode = true;
+                        document.querySelectorAll('.tl-select-checkbox').forEach(cb => cb.classList.add('show'));
+                        const delBtn = document.getElementById('batchDelBtn');
+                        if (delBtn) delBtn.classList.add('show');
+                        showToast("Đã bật chế độ chọn kênh để xóa!");
+                    }, 600);
+                });
+
+                const clearPress = () => {
+                    if (pressTimer) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+                };
+                line.addEventListener('mouseup', clearPress);
+                line.addEventListener('mouseleave', clearPress);
+
+                line.innerHTML = `
+                    <input type="checkbox" class="tl-select-checkbox ${isSelectionMode ? 'show' : ''}" data-id="${deck.id}">
+                    <div class="tl-key-badge" ondblclick="enableInlineEdit(this, ${deck.id})" title="Nhấn đúp để sửa tên">${deck.keyName}</div>
+                    <button class="tl-play-btn ${deck.isPlaying ? 'stop-mode' : ''}" type="button" onclick="togglePlay(${deck.id})">
+                        ${deck.isPlaying ? '■' : '▶'}
+                    </button>
+                    <div class="tl-file-info">
+                        <span class="tl-file-name" title="${deck.fileName}">${deck.fileName}</span>
+                        <div class="tl-progress-area">
+                            <span id="time-${deck.id}">00:00</span>
+                            <div class="tl-bar-bg"><div class="tl-bar-fill" id="bar-${deck.id}"></div></div>
+                            <span id="dur-${deck.id}">--:--</span>
+                        </div>
+                    </div>
+                    <label class="tl-upload-box" onclick="event.stopPropagation()">
+                        📁 Tệp riêng
+                        <input type="file" accept="audio/*" onchange="loadSingleAudio(${deck.id}, event)">
+                    </label>
+                    <div class="tl-vol-box">
+                        <span>VOL</span>
+                        <input class="tl-vol-slider" type="range" min="0" max="100" value="${deck.volume}" oninput="updateVolume(${deck.id}, this.value)">
+                        <span id="vol-val-${deck.id}" style="width: 32px; text-align: right;">${deck.volume}%</span>
+                    </div>
+                    <button class="tl-gear-btn" type="button" title="Cài đặt" onclick="openModal(${deck.id})">⚙️</button>
+                `;
+                grid.appendChild(line);
+            });
+            updateStats();
+        }
+
+        function openModal(deckId) {
+            editingDeckId = deckId;
+            const deck = decksData.find(d => d.id === deckId);
+            if (!deck) return;
+
+            document.getElementById('modalTitle').innerText = `CÀI ĐẶT ${deck.keyName}`;
+            document.getElementById('settingFadeIn').value = deck.fadeIn;
+            document.getElementById('settingFadeOut').value = deck.fadeOut;
+            
+            const loopBtn = document.getElementById('settingLoop');
+            if (deck.loop) loopBtn.classList.add('on'); else loopBtn.classList.remove('on');
+
+            document.getElementById('settingsModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('settingsModal').classList.remove('show');
+            editingDeckId = null;
+        }
+
+        function closeModalOutside(event) {
+            if (event.target.id === 'settingsModal') closeModal();
+        }
+
+        function toggleSwitchBtn(btn) {
+            btn.classList.toggle('on');
+        }
+
+        function saveModalSettings() {
+            if (editingDeckId === null) return;
+            const deck = decksData.find(d => d.id === editingDeckId);
+            if (deck) {
+                deck.fadeIn = parseFloat(document.getElementById('settingFadeIn').value) || 0;
+                deck.fadeOut = parseFloat(document.getElementById('settingFadeOut').value) || 0;
+                deck.loop = document.getElementById('settingLoop').classList.contains('on');
+
+                if (deck._activeAudio) deck._activeAudio.loop = deck.loop;
+                saveToStorage();
+                showToast(`Đã cập nhật ${deck.keyName}`);
+            }
+            closeModal();
+        }
+
+        function loadSingleAudio(deckId, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const existing = sessionLibrary.find(item => item.name === file.name);
+            if (!existing) {
+                sessionLibrary.push({ id: Date.now() + Math.random(), name: file.name, file: file });
+                renderLibrary();
+            } else {
+                existing.file = file;
+            }
+
+            const deck = decksData.find(d => d.id === deckId);
+            if (deck) {
+                if (deck._activeAudio) deck._activeAudio.pause();
+                deck.fileName = file.name;
+                deck.fileObj = file;
+                deck.isPlaying = false;
+
+                saveToStorage();
+                renderGrid();
+                showToast(`Đã nạp tệp cho ${deck.keyName}! Bấm Play để phát.`);
+            }
+        }
+
+        function clearFadeTimer(deckId) {
+            if (activeFadeTimers[deckId]) {
+                clearInterval(activeFadeTimers[deckId]);
+                delete activeFadeTimers[deckId];
+            }
+        }
+
+        function fadeInAudio(deck, audio, callback) {
+            clearFadeTimer(deck.id);
+            const targetVol = deck.volume / 100;
+            const duration = deck.fadeIn * 1000;
+
+            if (duration <= 0) {
+                audio.volume = targetVol;
+                audio.muted = isMasterMuted;
+                audio.play().catch(e => console.log("Autoplay blocked:", e));
+                if (callback) callback();
+                return;
+            }
+            audio.volume = 0;
+            audio.muted = isMasterMuted;
+            audio.play().then(() => {
+                const steps = 30;
+                const stepTime = duration / steps;
+                const volStep = targetVol / steps;
+                let currentStep = 0;
+
+                activeFadeTimers[deck.id] = setInterval(() => {
+                    currentStep++;
+                    if (currentStep <= steps) {
+                        audio.volume = Math.min(targetVol, currentStep * volStep);
+                    } else {
+                        audio.volume = targetVol;
+                        clearFadeTimer(deck.id);
+                        if (callback) callback();
+                    }
+                }, stepTime);
+            }).catch(e => console.log("Autoplay blocked:", e));
+        }
+
+        function fadeOutAudio(deck, audio, callback) {
+            clearFadeTimer(deck.id);
+            const duration = deck.fadeOut * 1000;
+            const startVol = audio.volume;
+
+            if (duration <= 0 || startVol === 0) {
+                audio.pause();
+                audio.currentTime = 0;
+                deck.isPlaying = false;
+                if (callback) callback();
+                return;
+            }
+
+            const steps = 30;
+            const stepTime = duration / steps;
+            const volStep = startVol / steps;
+            let currentStep = 0;
+
+            activeFadeTimers[deck.id] = setInterval(() => {
+                currentStep++;
+                if (currentStep <= steps) {
+                    audio.volume = Math.max(0, startVol - (currentStep * volStep));
+                } else {
+                    audio.volume = 0;
+                    audio.pause();
+                    audio.currentTime = 0;
+                    deck.isPlaying = false;
+                    clearFadeTimer(deck.id);
+                    if (callback) callback();
+                }
+            }, stepTime);
+        }
+
+        function togglePlay(deckId) {
+            const deck = decksData.find(d => d.id === deckId);
+            if (!deck) return;
+
+            let fileToPlay = deck.fileObj;
+            if (!fileToPlay && deck.fileName && deck.fileName !== "Chưa chọn tệp") {
+                const libMatch = sessionLibrary.find(l => l.name === deck.fileName);
+                if (libMatch) fileToPlay = libMatch.file;
+            }
+
+            if (!fileToPlay) {
+                alert(`Kênh ${deck.keyName} chưa có tệp âm thanh! Vui lòng bấm nút [📁 Tệp riêng] để chọn file nhạc.`);
+                return;
+            }
+
+            if (deck.isPlaying && deck._activeAudio) {
+                fadeOutAudio(deck, deck._activeAudio, () => {
+                    if (currentActiveId === deck.id) currentActiveId = null;
+                    const statusText = document.getElementById('masterStatusText');
+                    if (statusText) statusText.innerText = "Trạng thái: Đang chờ lệnh...";
+                    renderGrid();
+                });
+                return;
+            }
+
+            if (currentActiveId !== null && currentActiveId !== deckId) {
+                const oldDeck = decksData.find(d => d.id === currentActiveId);
+                if (oldDeck && oldDeck.isPlaying && oldDeck._activeAudio) {
+                    fadeOutAudio(oldDeck, oldDeck._activeAudio, () => { renderGrid(); });
+                }
+            }
+
+            const blobUrl = URL.createObjectURL(fileToPlay);
+            const newAudio = new Audio(blobUrl);
+            newAudio.volume = deck.volume / 100;
+            newAudio.loop = deck.loop;
+            newAudio.muted = isMasterMuted;
+            deck._activeAudio = newAudio;
+
+            newAudio.onended = () => {
+                deck.isPlaying = false;
+                if (currentActiveId === deck.id) currentActiveId = null;
+                renderGrid();
+            };
+
+            currentActiveId = deck.id;
+            deck.isPlaying = true;
+            const statusText = document.getElementById('masterStatusText');
+            if (statusText) statusText.innerText = `Đang phát: ${deck.keyName} – ${deck.fileName}`;
+
+            renderGrid();
+            fadeInAudio(deck, newAudio);
+        }
+
+        function stopAllAudio() {
+            decksData.forEach(d => {
+                clearFadeTimer(d.id);
+                if (d._activeAudio) { d._activeAudio.pause(); d._activeAudio.currentTime = 0; }
+                d.isPlaying = false;
+            });
+            currentActiveId = null;
+            const statusText = document.getElementById('masterStatusText');
+            if (statusText) statusText.innerText = "Trạng thái: Đang chờ lệnh...";
+            renderGrid();
+        }
+
+        function updateVolume(deckId, val) {
+            const deck = decksData.find(d => d.id === deckId);
+            if (deck) {
+                deck.volume = val;
+                if (deck._activeAudio && !activeFadeTimers[deckId]) {
+                    deck._activeAudio.volume = val / 100;
+                }
+                const volVal = document.getElementById(`vol-val-${deckId}`);
+                if (volVal) volVal.innerText = val + '%';
+                saveToStorage();
+            }
+        }
+
+        function updateStats() {
+            const loaded = decksData.filter(d => d.fileName !== "Chưa chọn tệp").length;
+            const playing = decksData.filter(d => d.isPlaying).length;
+            const statLoaded = document.getElementById('statLoaded');
+            const statPlaying = document.getElementById('statPlaying');
+            const statTotal = document.getElementById('statTotalChannels');
+            if (statLoaded) statLoaded.innerText = loaded;
+            if (statPlaying) statPlaying.innerText = playing;
+            if (statTotal) statTotal.innerText = decksData.length;
+        }
+
+        setInterval(() => {
+            decksData.forEach(deck => {
+                if (deck.isPlaying && deck._activeAudio) {
+                    const current = deck._activeAudio.currentTime;
+                    const duration = deck._activeAudio.duration || 0;
+                    const percent = duration > 0 ? (current / duration) * 100 : 0;
+                    
+                    const barSpan = document.getElementById(`bar-${deck.id}`);
+                    const timeSpan = document.getElementById(`time-${deck.id}`);
+                    const durSpan = document.getElementById(`dur-${deck.id}`);
+                    if (barSpan) barSpan.style.width = `${percent}%`;
+                    if (timeSpan) {
+                        const m = String(Math.floor(current / 60)).padStart(2, '0');
+                        const s = String(Math.floor(current % 60)).padStart(2, '0');
+                        timeSpan.innerText = `${m}:${s}`;
+                    }
+                    if (durSpan && duration > 0) {
+                        const dm = String(Math.floor(duration / 60)).padStart(2, '0');
+                        const ds = String(Math.floor(duration % 60)).padStart(2, '0');
+                        durSpan.innerText = `${dm}:${ds}`;
+                    }
+                }
+            });
+        }, 200);
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+            const matchedDeck = decksData.find(d => {
+                if (!d.rawKey) return false;
+                return e.code === `Digit${d.rawKey}` || e.code === `Key${d.rawKey}` || e.key.toUpperCase() === d.rawKey;
+            });
+
+            if (matchedDeck) {
+                e.preventDefault();
+                togglePlay(matchedDeck.id);
+            }
+
+            if (e.code === 'Escape') stopAllAudio();
+        });
+
+        setInterval(() => {
+            const now = new Date();
+            const clock = document.getElementById('liveClock');
+            if (clock) clock.innerText = now.toTimeString().split(' ')[0];
+        }, 1000);
+
+        renderGrid();
+        renderLibrary();
+        renderTrash();
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUDIO POOL PRO - Đăng Ký</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        :root { 
+            --bg-app: #090d16; 
+            --bg-sidebar: #111827; 
+            --accent-purple: #8b5cf6; 
+            --text-main: #f3f4f6; 
+            --text-sec: #9ca3af; 
+            --border-sub: rgba(255, 255, 255, 0.08); 
+        }
+        body { 
+            margin: 0; background: var(--bg-app); color: var(--text-main); 
+            font-family: 'Inter', sans-serif; min-height: 100vh; 
+            display: flex; justify-content: center; align-items: center; padding: 20px; 
+        }
+        .auth-box { 
+            background: var(--bg-sidebar); border: 1px solid var(--border-sub); 
+            border-radius: 16px; padding: 25px 35px; width: 440px; 
+            display: flex; flex-direction: column; gap: 14px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+        }
+        .auth-logo { font-size: 20px; font-weight: 700; color: var(--accent-purple); text-align: center; }
+        .auth-field { 
+            display: flex; flex-direction: column; gap: 6px; 
+            font-size: 11px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; 
+        }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .auth-field input { 
+            width: 100%; background: #090d16 !important; border: 1px solid var(--border-sub); 
+            border-radius: 8px; padding: 11px 38px 11px 12px; color: #fff !important; 
+            font-size: 13px; outline: none; -webkit-text-fill-color: #fff !important; 
+        }
+        .auth-field input:focus { border-color: var(--accent-purple); }
+        .toggle-eye { 
+            position: absolute; right: 10px; background: none; border: none; 
+            cursor: pointer; color: var(--text-sec); font-size: 14px; padding: 4px; 
+        }
+        .toggle-eye:hover { color: #fff; }
+        .otp-row { display: flex; gap: 8px; align-items: flex-end; }
+        .otp-row .auth-field { flex: 1; }
+        .timer-btn { 
+            background: #374151; color: #fff; border: none; border-radius: 8px; 
+            padding: 0 14px; font-size: 12px; font-weight: 600; cursor: pointer; height: 41px; white-space: nowrap; 
+        }
+        .timer-btn:disabled { background: #1f2937; color: #6b7280; cursor: not-allowed; }
+        .g-recaptcha { transform: scale(0.92); transform-origin: 0; margin-top: -2px; margin-bottom: -2px; }
+        .auth-submit-btn { 
+            background: #10b981; color: #fff; border: none; border-radius: 8px; 
+            padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; 
+        }
+        .auth-submit-btn:hover { background: #059669; }
+        .auth-link { font-size: 13px; text-align: center; color: var(--text-sec); cursor: pointer; }
+        .auth-link span { color: var(--accent-purple); font-weight: 600; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <div class="auth-logo">🎧 AUDIO POOL PRO</div>
+        <div style="font-size: 15px; font-weight: 600; text-align: center; color: #fff; margin-bottom: -2px;">Đăng Ký Tài Khoản</div>
+        
+        <div class="auth-field">
+            <span>Tên tài khoản</span>
+            <div class="input-wrapper"><input type="text" id="regUsername" placeholder="Nhập tên tài khoản" autocomplete="off"></div>
+        </div>
+
+        <div class="auth-field">
+            <span>Email nhận OTP</span>
+            <div class="input-wrapper"><input type="email" id="regEmail" placeholder="name@example.com" autocomplete="off"></div>
+        </div>
+
+        <div class="auth-field">
+            <span>Mật khẩu</span>
+            <div class="input-wrapper">
+                <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password">
+                <button type="button" class="toggle-eye" onclick="togglePassword('regPass', this)">👁️</button>
+            </div>
+        </div>
+
+        <div class="auth-field">
+            <span>Nhập lại mật khẩu</span>
+            <div class="input-wrapper">
+                <input type="password" id="regPassConfirm" placeholder="••••••••" autocomplete="new-password">
+                <button type="button" class="toggle-eye" onclick="togglePassword('regPassConfirm', this)">👁️</button>
+            </div>
+        </div>
+
+        <div class="otp-row">
+            <div class="auth-field">
+                <span>Mã OTP (6 số)</span>
+                <div class="input-wrapper"><input type="text" id="regOtp" placeholder="123456" autocomplete="off"></div>
+            </div>
+            <button class="timer-btn" id="sendOtpBtn" type="button" onclick="requestOtp()">Gửi OTP</button>
+        </div>
+
+        <div class="g-recaptcha" data-sitekey="6Lflpn8tAAAAALzyS5oBP_4qbht1TSV1NqAz6akF"></div>
+
+        <button class="auth-submit-btn" type="button" onclick="handleRegister()">Hoàn Tất Đăng Ký</button>
+        <div class="auth-link" onclick="window.location.href='login.html'">Đã có tài khoản? <span>Đăng nhập ngay</span></div>
+    </div>
+
+    <script>
+        function togglePassword(fieldId, btn) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") { input.type = "text"; btn.innerText = "🙈"; } 
+            else { input.type = "password"; btn.innerText = "👁️"; }
+        }
+
+        let countdown = 60, timerInterval = null;
+
+        async function requestOtp() {
+            const email = document.getElementById('regEmail').value.trim();
+            const recaptchaToken = grecaptcha.getResponse();
+
+            if (!email) { alert("Vui lòng nhập Email trước khi lấy mã OTP!"); return; }
+            if (!recaptchaToken) { alert("Vui lòng xác thực 'Tôi không phải là người máy'!"); return; }
+
+            const btn = document.getElementById('sendOtpBtn');
+            btn.disabled = true;
+
+            try {
+    const res = await fetch('https://audiopool-backend.onrender.com/api/send-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, recaptchaToken })
+});
+    const data = await res.json();
+    alert(data.message);
+
+                if (data.success) {
+                    startCountdown();
+                } else {
+                    btn.disabled = false;
+                    grecaptcha.reset();
+                }
+            } catch(e) {
+                alert("Không thể kết nối đến máy chủ Backend!");
+                btn.disabled = false;
+                grecaptcha.reset();
+            }
+        }
+
+        function startCountdown() {
+            countdown = 60;
+            const btn = document.getElementById('sendOtpBtn');
+            btn.disabled = true;
+            btn.innerText = `${countdown}s`;
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                countdown--;
+                btn.innerText = `${countdown}s`;
+                if (countdown <= 0) {
+                    clearInterval(timerInterval);
+                    btn.innerText = "Gửi Lại OTP";
+                    btn.disabled = false;
+                }
+            }, 1000);
+        }
+
+    async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPass').value.trim();
+            const passConfirm = document.getElementById('regPassConfirm').value.trim();
+            const otp = document.getElementById('regOtp').value.trim();
+
+            if (!username || !email || !pass || !passConfirm || !otp) { alert("Vui lòng điền đầy đủ tất cả các trường!"); return; }
+            if (pass !== passConfirm) { alert("Mật khẩu nhập lại không khớp!"); return; }
+
+            try {
+                const res = await fetch('https://audiopool-backend.onrender.com/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, otp, password: pass })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) window.location.href = 'login.html';
+            } catch(e) { alert("Lỗi kết nối từ máy chủ!"); }
+        }
+    </script>
+</body>
+</html>
