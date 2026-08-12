@@ -35,8 +35,8 @@ let usersDB = loadUsers();
 
 // Hàm gửi email dùng khóa trực tiếp an toàn tuyệt đối, loại bỏ hoàn toàn lỗi Key not found
 async function sendEmailViaBrevo(toEmail, subject, textContent) {
-    // Gán trực tiếp khóa vào đây để không bao giờ bị lỗi Key not found nữa
-    const BREVO_API_KEY = 'xsmtpsib-cfe8f22a64eabe587afe7c1c176a56e721007d44ce3e8b4dcc6b435fd4fd4e05-p3kbBqIzmLQz8rt1';
+    // Đọc trực tiếp từ biến môi trường trên Render
+    const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
     try {
         await axios.post('https://api.brevo.com/v3/smtp/email', {
