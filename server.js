@@ -33,9 +33,9 @@ function saveUsers(users) {
 
 let usersDB = loadUsers();
 
-// Hàm gửi email qua Brevo HTTP API trực tiếp bằng axios
+// Hàm gửi email qua Brevo HTTP API với API Key mới nhất
 async function sendEmailViaBrevo(toEmail, subject, textContent) {
-    const BREVO_API_KEY = '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';
+    const BREVO_API_KEY = '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';
 
     try {
         await axios.post('https://api.brevo.com/v3/smtp/email', {
