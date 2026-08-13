@@ -3,7 +3,7 @@ const cors = require('cors');
 const { Resend } = require('resend');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios'); // Thêm axios để verify recaptcha
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -12,25 +12,19 @@ app.use(express.json());
 const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
-// Khởi tạo Resend bằng biến môi trường (Bảo mật)
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 function loadUsers() {
-    if (!fs.existsSync(USERS_FILE)) {
-        return [];
-    }
-    try {
-        const data = fs.readFileSync(USERS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        return [];
-    }
+    if (!fs.existsSync(USERS_FILE)) return [];
+    try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } 
+    catch (err) { return []; }
 }
 
 function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
 }
 
+// Hàm kiểm tra Google reCAPTCHA
 async function verifyRecaptcha(token) {
     const secretKey = '6Lflpn8tAAAAAHaCwA_9iE0bj23_2EF8TbhUy6MG';
     try {
@@ -41,12 +35,16 @@ async function verifyRecaptcha(token) {
     }
 }
 
-// 1. API Gửi mã OTP
+// 1. API Gửi OTP (Có tích hợp reCAPTCHA)
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { email, recaptchaToken } = req.body;
+        
+        // Kiểm tra Captcha
         const isHuman = await verifyRecaptcha(recaptchaToken);
-        if (!isHuman) return res.status(400).json({ success: false, message: 'Xác thực Captcha thất bại!' });
+        if (!isHuman) {
+            return res.status(400).json({ success: false, message: 'Xác thực Captcha thất bại!' });
+        }
 
         const usersDB = loadUsers();
         if (usersDB.find(u => u.email === email)) {
@@ -56,9 +54,8 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
-        // Gửi email bằng tên miền chính chủ
         const { error } = await resend.emails.send({
-            from: 'AUDIO POOL PRO <onboarding@audiopoolpro.io.vn>', 
+            from: 'AUDIO POOL PRO <support@audiopoolpro.io.vn>',
             to: [email],
             subject: 'Mã xác thực OTP của bạn',
             html: `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -69,15 +66,13 @@ app.post('/api/send-otp', async (req, res) => {
         });
 
         if (error) throw new Error(error.message);
-
         res.json({ success: true, message: 'Mã OTP đã được gửi về email của bạn!' });
     } catch (error) {
-        console.error('Lỗi gửi email:', error.message);
         res.status(500).json({ success: false, message: 'Không thể gửi email: ' + error.message });
     }
 });
 
-// 2. API Đăng ký tài khoản
+// 2. API Đăng ký
 app.post('/api/register', (req, res) => {
     const { email, otp, username, password } = req.body;
     const record = otpStorage[email];
@@ -105,6 +100,12 @@ app.post('/api/login', (req, res) => {
     }
     
     res.json({ success: true, username: user.username, role: user.role, message: 'Đăng nhập thành công!' });
+});
+
+// 4. API Dành cho Admin lấy danh sách tài khoản
+app.get('/api/admin/users', (req, res) => {
+    const usersDB = loadUsers();
+    res.json({ success: true, users: usersDB });
 });
 
 const PORT = process.env.PORT || 10000;
