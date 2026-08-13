@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,8 +11,14 @@ app.use(express.json());
 const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
-// Khởi tạo Resend với API Key chính xác của bạn
-const resend = new Resend('re_Bj4p8hdq_MVfR1bxbwX8zvcFY21NNRuKg');
+// Cấu hình Nodemailer dùng Gmail SMTP (phiên bản gốc)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'lelam5850@gmail.com', // Email của bạn
+        pass: 'erab pyyn vprn dkkf' // Mật khẩu ứng dụng (App Password) 16 ký tự của Gmail
+    }
+});
 
 function loadUsers() {
     if (!fs.existsSync(USERS_FILE)) {
@@ -59,25 +65,17 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
-        // Gửi email qua Resend
-        const { error } = await resend.emails.send({
-            from: 'AUDIO POOL PRO <onboarding@resend.dev>',
-            to: [email],
+        // Gửi mail qua Gmail SMTP gốc
+        await transporter.sendMail({
+            from: '"AUDIO POOL PRO" <lelam5850@gmail.com>',
+            to: email,
             subject: 'Mã xác thực AUDIO POOL PRO',
-            html: `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="color: #8b5cf6;">Mã xác thực AUDIO POOL PRO</h2>
-                    <p>Mã OTP của bạn là: <strong style="font-size: 20px; color: #10b981;">${otp}</strong></p>
-                    <p>Mã này có hiệu lực trong vòng 2 phút.</p>
-                   </div>`
+            html: `<h3>Mã OTP của bạn là: <b>${otp}</b></h3><p>Mã có hiệu lực trong 2 phút.</p>`
         });
-
-        if (error) {
-            throw new Error(error.message);
-        }
 
         res.json({ success: true, message: 'Đã gửi mã OTP thành công!' });
     } catch (error) {
-        console.error('Lỗi gửi email Resend:', error.message);
+        console.error('Lỗi gửi email Gmail:', error);
         res.status(500).json({ success: false, message: 'Không thể gửi email: ' + error.message });
     }
 });
