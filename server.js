@@ -64,14 +64,18 @@ app.post('/api/send-otp', async (req, res) => {
             from: 'AUDIO POOL PRO <onboarding@resend.dev>',
             to: [email],
             subject: 'Mã xác thực AUDIO POOL PRO',
-            text: `Mã OTP của bạn là: ${otp}`
+            html: `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #8b5cf6;">Mã xác thực AUDIO POOL PRO</h2>
+                    <p>Mã OTP của bạn là: <strong style="font-size: 20px; color: #10b981;">${otp}</strong></p>
+                    <p>Mã này có hiệu lực trong vòng 2 phút.</p>
+                   </div>`
         });
 
         if (error) {
             throw new Error(error.message);
         }
 
-        res.json({ success: true, message: 'Đã gửi mã OTP!' });
+        res.json({ success: true, message: 'Đã gửi mã OTP thành công!' });
     } catch (error) {
         console.error('Lỗi gửi email Resend:', error.message);
         res.status(500).json({ success: false, message: 'Không thể gửi email: ' + error.message });
@@ -94,8 +98,8 @@ app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     usersDB = loadUsers();
     const user = usersDB.find(u => (u.username === username || u.email === username) && u.password === password);
-    if (!user) return res.status(400).json({ success: false, message: 'Sai thông tin!' });
-    res.json({ success: true, username: user.username, role: user.role });
+    if (!user) return res.status(400).json({ success: false, message: 'Sai thông tin đăng nhập!' });
+    res.json({ success: true, username: user.username, role: user.role, message: 'Đăng nhập thành công!' });
 });
 
 const PORT = process.env.PORT || 10000;
