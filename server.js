@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,32 +33,19 @@ function saveUsers(users) {
 
 let usersDB = loadUsers();
 
-// Hàm gửi email qua Brevo HTTP API với API Key mới nhất
-async function sendEmailViaBrevo(toEmail, subject, textContent) {
-    // Gán thẳng trực tiếp chuỗi key chuẩn vào đây, không dùng process.env nữa
-    const BREVO_API_KEY = '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';
-
-    try {
-        await axios.post('https://api.brevo.com/v3/smtp/email', {
-            sender: { name: "AUDIO POOL PRO", email: "lelam5850@gmail.com" },
-            to: [{ email: toEmail }],
-            subject: subject,
-            textContent: textContent
-        }, {
-            headers: {
-                'accept': 'application/json',
-                'api-key': BREVO_API_KEY,
-                'content-type': 'application/json'
-            }
-        });
-        return true;
-    } catch (error) {
-        console.error('Lỗi gửi email Brevo:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Không thể gửi email qua Brevo');
+// Cấu hình Nodemailer chuẩn dùng cổng 465 để vượt qua tường lửa của Render
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // Dùng SSL
+    auth: {
+        user: 'lelam5850@gmail.com',
+        pass: 'erab pyyn vprn dkkf' // Mật khẩu ứng dụng Gmail 16 ký tự của bạn
     }
-}
+});
 
 async function verifyRecaptcha(token) {
+    const axios = require('axios');
     const secretKey = '6Lflpn8tAAAAAHaCwA_9iE0bj23_2EF8TbhUy6MG';
     try {
         const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`);
@@ -80,10 +67,18 @@ app.post('/api/send-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
-        await sendEmailViaBrevo(email, 'Mã xác thực AUDIO POOL PRO', `Mã OTP của bạn là: ${otp}`);
+        // Gửi email trực tiếp qua Gmail
+        await transporter.sendMail({
+            from: '"AUDIO POOL PRO" <lelam5850@gmail.com>',
+            to: email,
+            subject: 'Mã xác thực AUDIO POOL PRO',
+            text: `Mã OTP của bạn là: ${otp}`
+        });
+
         res.json({ success: true, message: 'Đã gửi mã OTP!' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Lỗi gửi email Gmail:', error.message);
+        res.status(500).json({ success: false, message: 'Không thể gửi email: ' + error.message });
     }
 });
 
