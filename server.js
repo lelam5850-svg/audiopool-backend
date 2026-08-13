@@ -12,7 +12,7 @@ const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
 // Khởi tạo Resend với API key mới nhất của bạn
-const resend = new Resend('re_a8ScVy1i_AA5X7WZQhhMXhAcUp2GC291n');
+const resend = new Resend('re_3C9jdA71_59xsrx8dzZpxzdB9wVeWEthU');
 
 function loadUsers() {
     if (!fs.existsSync(USERS_FILE)) {
