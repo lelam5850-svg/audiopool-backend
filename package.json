@@ -6,6 +6,7 @@
     "axios": "^1.19.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "nodemailer": "^9.0.5"
+    "nodemailer": "^9.0.5",
+    "resend": "^6.19.0"
   }
 }
