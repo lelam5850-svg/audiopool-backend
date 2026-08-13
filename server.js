@@ -35,6 +35,7 @@ let usersDB = loadUsers();
 
 // Hàm gửi email qua Brevo HTTP API với API Key mới nhất
 async function sendEmailViaBrevo(toEmail, subject, textContent) {
+    // Gán thẳng trực tiếp chuỗi key chuẩn vào đây, không dùng process.env nữa
     const BREVO_API_KEY = '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';
 
     try {
