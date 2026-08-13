@@ -11,8 +11,8 @@ app.use(express.json());
 const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
-// Khởi tạo Resend với API key mới nhất của bạn
-const resend = new Resend('re_3C9jdA71_59xsrx8dzZpxzdB9wVeWEthU');
+// Khởi tạo Resend sử dụng biến môi trường (Tuyệt đối an toàn, không bị GitHub chặn)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function loadUsers() {
     if (!fs.existsSync(USERS_FILE)) {
@@ -61,7 +61,6 @@ app.post('/api/send-otp', async (req, res) => {
 
         // Tạo mã OTP ngẫu nhiên 6 chữ số
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        // Lưu OTP vào bộ nhớ kèm thời gian hết hạn (2 phút)
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
         // Gửi email qua Resend API
@@ -100,10 +99,9 @@ app.post('/api/register', (req, res) => {
     usersDB.push({ username, email, password, role: 'user' });
     saveUsers(usersDB);
     
-    // Xóa OTP sau khi dùng thành công
     delete otpStorage[email];
     
-    res.json({ success: true, message: 'Đăng ký tài khoản thành công!' });
+    res.json({ success: true, message: ' đăng ký tài khoản thành công!' });
 });
 
 // 3. API Đăng nhập
