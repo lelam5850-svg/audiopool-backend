@@ -3,6 +3,7 @@ const cors = require('cors');
 const { Resend } = require('resend');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios'); // Thêm axios để verify recaptcha
 
 const app = express();
 app.use(cors());
@@ -11,22 +12,18 @@ app.use(express.json());
 const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
-// Khởi tạo Resend sử dụng biến môi trường (Tuyệt đối an toàn, không bị GitHub chặn)
+// Khởi tạo Resend bằng biến môi trường (Bảo mật)
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 function loadUsers() {
     if (!fs.existsSync(USERS_FILE)) {
-        const defaultUsers = [
-            { username: 'admin', email: 'lelam5850@gmail.com', password: '123', role: 'admin' }
-        ];
-        fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2), 'utf8');
-        return defaultUsers;
+        return [];
     }
     try {
         const data = fs.readFileSync(USERS_FILE, 'utf8');
         return JSON.parse(data);
     } catch (err) {
-        return [{ username: 'admin', email: 'lelam5850@gmail.com', password: '123', role: 'admin' }];
+        return [];
     }
 }
 
@@ -34,10 +31,7 @@ function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
 }
 
-let usersDB = loadUsers();
-
 async function verifyRecaptcha(token) {
-    const axios = require('axios');
     const secretKey = '6Lflpn8tAAAAAHaCwA_9iE0bj23_2EF8TbhUy6MG';
     try {
         const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`);
@@ -54,18 +48,17 @@ app.post('/api/send-otp', async (req, res) => {
         const isHuman = await verifyRecaptcha(recaptchaToken);
         if (!isHuman) return res.status(400).json({ success: false, message: 'Xác thực Captcha thất bại!' });
 
-        usersDB = loadUsers();
+        const usersDB = loadUsers();
         if (usersDB.find(u => u.email === email)) {
             return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống!' });
         }
 
-        // Tạo mã OTP ngẫu nhiên 6 chữ số
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
-        // Gửi email qua Resend API
+        // Gửi email bằng tên miền chính chủ
         const { error } = await resend.emails.send({
-            from: 'AUDIO POOL PRO <onboarding@resend.dev>',
+            from: 'AUDIO POOL PRO <onboarding@audiopoolpro.io.vn>', 
             to: [email],
             subject: 'Mã xác thực OTP của bạn',
             html: `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -75,9 +68,7 @@ app.post('/api/send-otp', async (req, res) => {
                    </div>`
         });
 
-        if (error) {
-            throw new Error(error.message);
-        }
+        if (error) throw new Error(error.message);
 
         res.json({ success: true, message: 'Mã OTP đã được gửi về email của bạn!' });
     } catch (error) {
@@ -95,19 +86,18 @@ app.post('/api/register', (req, res) => {
         return res.status(400).json({ success: false, message: 'Mã OTP không chính xác hoặc đã hết hạn!' });
     }
 
-    usersDB = loadUsers();
+    const usersDB = loadUsers();
     usersDB.push({ username, email, password, role: 'user' });
     saveUsers(usersDB);
     
     delete otpStorage[email];
-    
-    res.json({ success: true, message: ' đăng ký tài khoản thành công!' });
+    res.json({ success: true, message: 'Đăng ký tài khoản thành công!' });
 });
 
 // 3. API Đăng nhập
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    usersDB = loadUsers();
+    const usersDB = loadUsers();
     const user = usersDB.find(u => (u.username === username || u.email === username) && u.password === password);
     
     if (!user) {
