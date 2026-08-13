@@ -11,7 +11,7 @@ app.use(express.json());
 const USERS_FILE = path.join(__dirname, 'users.json');
 let otpStorage = {};
 
-// Khởi tạo Resend API (Vượt qua hoàn toàn lỗi chặn port trên Render)
+// Khởi tạo Resend với API key mới nhất của bạn
 const resend = new Resend('re_a8ScVy1i_AA5X7WZQhhMXhAcUp2GC291n');
 
 function loadUsers() {
@@ -47,7 +47,7 @@ async function verifyRecaptcha(token) {
     }
 }
 
-// 1. API Gửi mã OTP (Xử lý tại Backend, an toàn tuyệt đối)
+// 1. API Gửi mã OTP
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { email, recaptchaToken } = req.body;
@@ -64,7 +64,7 @@ app.post('/api/send-otp', async (req, res) => {
         // Lưu OTP vào bộ nhớ kèm thời gian hết hạn (2 phút)
         otpStorage[email] = { otp, expiresAt: Date.now() + 2 * 60 * 1000 };
 
-        // Gửi email qua Resend (HTTP API chuẩn)
+        // Gửi email qua Resend API
         const { error } = await resend.emails.send({
             from: 'AUDIO POOL PRO <onboarding@resend.dev>',
             to: [email],
@@ -87,7 +87,7 @@ app.post('/api/send-otp', async (req, res) => {
     }
 });
 
-// 2. API Đăng ký tài khoản (Kiểm tra OTP chính xác trước khi lưu)
+// 2. API Đăng ký tài khoản
 app.post('/api/register', (req, res) => {
     const { email, otp, username, password } = req.body;
     const record = otpStorage[email];
@@ -100,7 +100,7 @@ app.post('/api/register', (req, res) => {
     usersDB.push({ username, email, password, role: 'user' });
     saveUsers(usersDB);
     
-    // Xóa OTP sau khi dùng thành công để tránh tái sử dụng
+    // Xóa OTP sau khi dùng thành công
     delete otpStorage[email];
     
     res.json({ success: true, message: 'Đăng ký tài khoản thành công!' });
