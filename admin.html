@@ -24,7 +24,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>🛠️ Quản Trị Viên - Kích Hoạt Tài Khoản Pro Từ Xa</h2>
         <div>
-            <button class="btn" style="background: #3b82f6; color: white; margin-right: 10px;" onclick="window.location.href='dashboard.html'">Vào Trang Chính (Dashboard)</button>
+            <button class="btn" style="background: #3b82f6; color: white; margin-right: 10px;" onclick="window.location.href='dashboard.html'">Vào Trang Chính</button>
             <button class="btn" style="background: #ef4444; color: white;" onclick="logout()">Đăng Xuất</button>
         </div>
     </div>
@@ -35,12 +35,12 @@
             <tr>
                 <th>Tên Đăng Nhập</th>
                 <th>Email</th>
-                <th>Gói Cước / Vai Trò</th>
+                <th>Gói Cước / Vai Trô</th>
                 <th>Thao Tác Kích Hoạt Từ Xa</th>
             </tr>
         </thead>
         <tbody id="userTableBody">
-            <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Đang tải dữ liệu...</td></tr>
+            <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Đang kết nối tải dữ liệu...</td></tr>
         </tbody>
     </table>
 </div>
@@ -54,7 +54,6 @@
 
     async function loadUsersList() {
         try {
-            // Sử dụng đường dẫn API đầy đủ hoặc tương đối khớp với backend của bạn
             const res = await fetch('https://audiopool-backend.onrender.com/api/admin/users');
             const data = await res.json();
             
@@ -67,23 +66,8 @@
                     const isAdmin = user.role === 'admin';
                     const isPro = user.package && user.package !== 'free';
                     
-                    let badgeHTML = '';
-                    if (isAdmin) {
-                        badgeHTML = '<span class="badge badge-admin">ADMIN TỔNG 👑</span>';
-                    } else if (isPro) {
-                        badgeHTML = '<span class="badge badge-pro">PRO VIP 💎</span>';
-                    } else {
-                        badgeHTML = '<span class="badge badge-free">FREE</span>';
-                    }
-
-                    let actionHTML = '';
-                    if (isAdmin) {
-                        actionHTML = '<span style="color: #38bdf8; font-weight: bold;">Quản trị tối cao</span>';
-                    } else if (isPro) {
-                        actionHTML = '<span style="color: #10b981; font-weight: bold;">Đã là Pro</span>';
-                    } else {
-                        actionHTML = `<button class="btn btn-activate" onclick="upgradeUser('${user.username}')">⚡ Kích Hoạt Pro</button>`;
-                    }
+                    let badgeHTML = isAdmin ? '<span class="badge badge-admin">ADMIN 👑</span>' : (isPro ? '<span class="badge badge-pro">PRO VIP 💎</span>' : '<span class="badge badge-free">FREE</span>');
+                    let actionHTML = isAdmin ? '<span style="color: #38bdf8; font-weight: bold;">Quản trị tối cao</span>' : (isPro ? '<span style="color: #10b981; font-weight: bold;">Đã là Pro</span>' : `<button class="btn btn-activate" onclick="upgradeUser('${user.username}')">⚡ Kích Hoạt Pro</button>`);
 
                     tr.innerHTML = `
                         <td><b>${user.username}</b></td>
@@ -94,11 +78,10 @@
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có tài khoản nào khác trong hệ thống.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có tài khoản nào đăng ký.</td></tr>`;
             }
         } catch (e) {
-            console.error(e);
-            document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444;">Không thể kết nối tới máy chủ để tải danh sách người dùng!</td></tr>`;
+            document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444;">Lỗi kết nối máy chủ backend!</td></tr>`;
         }
     }
 

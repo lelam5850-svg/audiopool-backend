@@ -40,14 +40,12 @@
 </head>
 <body>
 
-    <!-- CỘT TRÁI: Thông tin & Tính năng cơ bản -->
     <div class="column col-left">
         <div class="box">
             <div class="box-title">👤 Thông tin tài khoản</div>
             <p style="margin: 0 0 10px 0;">Xin chào, <b id="usernameDisplay" style="color: var(--accent-green);">...</b></p>
             <p style="margin: 0 0 15px 0;">Gói cước: <span id="packageBadge" class="badge badge-free">FREE</span></p>
             
-            <!-- Nút vào trang Admin (Chỉ hiện khi tài khoản là admin) -->
             <button id="adminBtn" class="btn btn-admin" style="width: 100%; margin-bottom: 8px; display: none;" onclick="window.location.href='admin.html'">🛠️ Mở Trang Admin</button>
             <button class="btn btn-free" style="width: 100%;" onclick="logout()">Đăng xuất</button>
         </div>
@@ -71,7 +69,6 @@
         </div>
     </div>
 
-    <!-- CỘT PHẢI: 16 Key & Tính năng Pro -->
     <div class="column col-right">
         <div class="box">
             <div class="box-title">
@@ -89,7 +86,6 @@
     </div>
 
     <script>
-        // Kiểm tra đăng nhập
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         if (!currentUser) {
             window.location.href = 'login.html';
@@ -99,17 +95,21 @@
         const badge = document.getElementById('packageBadge');
         const adminBtn = document.getElementById('adminBtn');
 
-        // Phân quyền hiển thị giao diện
-        if (currentUser.role === 'admin') {
+        const isFree = !currentUser.package || currentUser.package === 'free';
+        const isAdmin = currentUser.role === 'admin';
+
+        if (isAdmin) {
             badge.innerText = 'ADMIN TỔNG 👑';
             badge.className = 'badge badge-admin';
-            adminBtn.style.display = 'block'; // Hiện nút quản trị
-        } else if (currentUser.package && currentUser.package !== 'free') {
+            adminBtn.style.display = 'block';
+        } else if (!isFree) {
             badge.innerText = 'PRO VIP 💎';
             badge.className = 'badge badge-pro';
+        } else {
+            badge.innerText = 'FREE';
+            badge.className = 'badge badge-free';
         }
 
-        // Render 16 key cơ bản
         const keyGrid = document.getElementById('keyGrid');
         for (let i = 1; i <= 16; i++) {
             const keyBtn = document.createElement('div');
@@ -121,21 +121,20 @@
             keyGrid.appendChild(keyBtn);
         }
 
-        // Hàm kiểm tra và chặn tài khoản Free khi bấm tính năng Pro
         function handleProAction(actionName) {
-            // Nếu là Admin hoặc đã kích hoạt Pro -> Cho dùng thoải mái
-            if (currentUser.role === 'admin' || (currentUser.package && currentUser.package !== 'free')) {
+            const freshUser = JSON.parse(localStorage.getItem('currentUser'));
+            const userIsFree = !freshUser.package || freshUser.package === 'free';
+            const userIsAdmin = freshUser.role === 'admin';
+
+            if (userIsAdmin || !userIsFree) {
                 alert(`💎 Đang thực hiện tính năng PRO: ${actionName} thành công!`);
                 return;
             }
 
-            // Nếu là tài khoản Free -> Chặn lại và hiện bảng mời mua hàng dẫn qua Zalo/Facebook
             const msg = `❌ Bạn đang dùng bản Free.\n\nTính năng "${actionName}" chỉ dành cho tài khoản PRO!\n\n👉 Bấm [OK] để nhắn tin Zalo mua gói.\n👉 Bấm [Cancel] để liên hệ qua Facebook.`;
             
             if (confirm(msg)) {
-                window.open('https://zalo.me/09xxxxxxxx', '_blank'); // Thay số Zalo của bạn
-            } else {
-                window.open('https://facebook.com/your_profile', '_blank'); // Thay link Facebook của bạn
+                window.open('http://zaloapp.com/qr/p/1gemukvum5sod', '_blank'); 
             }
         }
 

@@ -1,50 +1,53 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const { Resend } = require('resend');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const USERS_FILE = path.join(__dirname, 'users.json');
-let otpStorage = {};
+// Kết nối MongoDB Atlas (Đọc từ biến môi trường MONGO_URI trên Render)
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://<username>:<password>@cluster.mongodb.net/audiopool?retryWrites=true&w=majority";
 
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('✅ Đã kết nối thành công với MongoDB Atlas!'))
+    .catch(err => console.log('❌ Lỗi kết nối MongoDB:', err));
+
+// Định nghĩa Schema người dùng
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: 'user' }, // 'admin' hoặc 'user'
+    package: { type: String, default: 'free' }, // 'free' hoặc 'pro_lifetime'
+    expireDate: { type: Date, default: null }
+});
+
+const User = mongoose.model('User', userSchema);
+
+let otpStorage = {};
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-function loadUsers() {
-    const defaultAdmin = [{
-        username: "admin",
-        email: "admin@audiopoolpro.io.vn",
-        password: "Admin@123",
-        role: "admin",
-        package: "pro_lifetime",
-        expireDate: null
-    }];
-
-    if (!fs.existsSync(USERS_FILE)) {
-        saveUsers(defaultAdmin);
-        return defaultAdmin;
-    }
-    try { 
-        const data = fs.readFileSync(USERS_FILE, 'utf8');
-        let users = JSON.parse(data);
-        
-        // Đảm bảo luôn tồn tại tài khoản admin tổng trong danh sách
-        if (!users.some(u => u.role === 'admin' || u.username === 'admin')) {
-            users.unshift(defaultAdmin[0]);
-            saveUsers(users);
+// Khởi tạo tài khoản Admin mặc định nếu chưa có trên Database
+async function initAdmin() {
+    try {
+        const adminExist = await User.findOne({ role: 'admin' });
+        if (!adminExist) {
+            await User.create({
+                username: "admin",
+                email: "admin@audiopoolpro.io.vn",
+                password: "Admin@123",
+                role: "admin",
+                package: "pro_lifetime"
+            });
+            console.log('👑 Đã khởi tạo tài khoản Admin mặc định thành công!');
         }
-        return users;
-    } catch (err) { 
-        return defaultAdmin; 
+    } catch (e) {
+        console.log('Lỗi tạo admin:', e);
     }
 }
-
-function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-}
+initAdmin();
 
 // 1. API Gửi OTP Đăng ký
 app.post('/api/send-otp', async (req, res) => {
@@ -52,8 +55,8 @@ app.post('/api/send-otp', async (req, res) => {
         const { email } = req.body;
         if (!email) return res.status(400).json({ success: false, message: 'Vui lòng nhập email!' });
 
-        const usersDB = loadUsers();
-        if (usersDB.find(u => u.email === email)) {
+        const userExist = await User.findOne({ email });
+        if (userExist) {
             return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống!' });
         }
 
@@ -84,8 +87,7 @@ app.post('/api/forgot-password', async (req, res) => {
         const { email } = req.body;
         if (!email) return res.status(400).json({ success: false, message: 'Vui lòng nhập email!' });
 
-        const usersDB = loadUsers();
-        const user = usersDB.find(u => u.email === email);
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ success: false, message: 'Email này chưa được đăng ký trong hệ thống!' });
         }
@@ -112,49 +114,66 @@ app.post('/api/forgot-password', async (req, res) => {
 });
 
 // 3. API Đăng ký tài khoản
-app.post('/api/register', (req, res) => {
-    const { email, otp, username, password } = req.body;
-    const record = otpStorage[email];
+app.post('/api/register', async (req, res) => {
+    try {
+        const { email, otp, username, password } = req.body;
+        const record = otpStorage[email];
 
-    if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
-        return res.status(400).json({ success: false, message: 'Mã OTP không chính xác hoặc đã hết hạn!' });
+        if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
+            return res.status(400).json({ success: false, message: 'Mã OTP không chính xác hoặc đã hết hạn!' });
+        }
+
+        const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ success: false, message: 'Mật khẩu phải có ít nhất 6 ký tự, gồm chữ, số và ký tự đặc biệt (VD: abc123@)!' });
+        }
+
+        const emailExist = await User.findOne({ email });
+        if (emailExist) return res.status(400).json({ success: false, message: 'Email đã tồn tại!' });
+
+        const userExist = await User.findOne({ username });
+        if (userExist) return res.status(400).json({ success: false, message: 'Tên đăng nhập đã tồn tại!' });
+
+        await User.create({
+            username,
+            email,
+            password,
+            role: 'user',
+            package: 'free'
+        });
+
+        delete otpStorage[email];
+        res.json({ success: true, message: 'Đăng ký thành công!' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
-
-    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-    if (!passwordRegex.test(password)) {
-        return res.status(400).json({ success: false, message: 'Mật khẩu phải có ít nhất 6 ký tự, gồm chữ, số và ký tự đặc biệt (VD: abc123@)!' });
-    }
-
-    const usersDB = loadUsers();
-    if (usersDB.find(u => u.email === email)) return res.status(400).json({ success: false, message: 'Email đã tồn tại!' });
-    if (usersDB.find(u => u.username === username)) return res.status(400).json({ success: false, message: 'Tên đăng nhập đã tồn tại!' });
-
-    usersDB.push({ username, email, password, role: 'user', package: 'free', expireDate: null });
-    saveUsers(usersDB);
-    delete otpStorage[email];
-    
-    res.json({ success: true, message: 'Đăng ký thành công!' });
 });
 
 // 4. API Đăng nhập
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const usersDB = loadUsers();
-    const user = usersDB.find(u => (u.username === username || u.email === username) && u.password === password);
-    
-    if (!user) return res.status(400).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu!' });
-    
-    res.json({ 
-        success: true, 
-        username: user.username, 
-        role: user.role, 
-        package: user.package,
-        message: 'Đăng nhập thành công!' 
-    });
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ 
+            $or: [{ username: username }, { email: username }],
+            password: password 
+        });
+        
+        if (!user) return res.status(400).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu!' });
+        
+        res.json({ 
+            success: true, 
+            username: user.username, 
+            role: user.role, 
+            package: user.package,
+            message: 'Đăng nhập thành công!' 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 // 5. API Đổi mật khẩu mới
-app.post('/api/reset-password', (req, res) => {
+app.post('/api/reset-password', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
         const record = otpStorage[email];
@@ -163,8 +182,7 @@ app.post('/api/reset-password', (req, res) => {
             return res.status(400).json({ success: false, message: 'Mã OTP không chính xác hoặc đã hết hạn!' });
         }
 
-        const usersDB = loadUsers();
-        const user = usersDB.find(u => u.email === email);
+        const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ success: false, message: 'Không tìm thấy tài khoản!' });
 
         if (user.password === newPassword) {
@@ -177,7 +195,7 @@ app.post('/api/reset-password', (req, res) => {
         }
 
         user.password = newPassword;
-        saveUsers(usersDB);
+        await user.save();
         delete otpStorage[email];
 
         res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
@@ -186,24 +204,32 @@ app.post('/api/reset-password', (req, res) => {
     }
 });
 
-// 6. API Admin lấy danh sách người dùng
-app.get('/api/admin/users', (req, res) => {
-    res.json({ success: true, users: loadUsers() });
+// 6. API Admin lấy danh sách người dùng từ Database
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const users = await User.find({}, { password: 0 });
+        res.json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 // 7. API Admin kích hoạt Pro từ xa
-app.post('/api/admin/upgrade-pro', (req, res) => {
-    const { username } = req.body;
-    const usersDB = loadUsers();
-    const user = usersDB.find(u => u.username === username);
+app.post('/api/admin/upgrade-pro', async (req, res) => {
+    try {
+        const { username } = req.body;
+        const user = await User.findOne({ username });
 
-    if (!user) return res.status(400).json({ success: false, message: 'Không tìm thấy người dùng!' });
+        if (!user) return res.status(400).json({ success: false, message: 'Không tìm thấy người dùng!' });
 
-    user.package = 'pro_lifetime';
-    saveUsers(usersDB);
+        user.package = 'pro_lifetime';
+        await user.save();
 
-    res.json({ success: true, message: `Đã kích hoạt bản Pro thành công cho tài khoản: ${username}!` });
+        res.json({ success: true, message: `Đã kích hoạt bản Pro thành công cho tài khoản: ${username}!` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server đang chạy trên port ${PORT}`));s
