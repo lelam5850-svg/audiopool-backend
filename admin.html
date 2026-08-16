@@ -2,109 +2,106 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Quản Trị - Admin Tổng AUDIO POOL PRO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Audio Pool Pro - Trang Quản Trị Admin</title>
     <style>
-        :root {
-            --bg-app: #090d16;
-            --bg-sidebar: #111827;
-            --accent-purple: #8b5cf6;
-            --text-main: #f3f4f6;
-            --text-sec: #9ca3af;
-            --border-sub: rgba(255, 255, 255, 0.08);
-        }
-        body {
-            margin: 0; background: var(--bg-app); color: var(--text-main);
-            font-family: 'Inter', sans-serif; padding: 40px;
-        }
-        .admin-container {
-            max-width: 900px; margin: 0 auto;
-            background: var(--bg-sidebar); border: 1px solid var(--border-sub);
-            border-radius: 16px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        }
-        h2 { color: var(--accent-purple); margin-top: 0; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-sub); padding-bottom: 15px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid var(--border-sub); padding: 12px; text-align: left; font-size: 14px; }
-        th { background: rgba(255, 255, 255, 0.03); color: var(--text-sec); font-weight: 600; text-transform: uppercase; font-size: 11px; }
-        td { color: var(--text-main); }
-        .badge-admin { color: #f43f5e; font-weight: 700; }
-        .badge-user { color: #10b981; font-weight: 600; }
-        .logout-btn { background: #ef4444; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .logout-btn:hover { background: #dc2626; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: white; margin: 0; padding: 30px; }
+        .container { max-width: 900px; margin: auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h2 { color: #f59e0b; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #0f172a; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #38bdf8; }
+        .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-activate { background: #10b981; color: white; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-free { background: #64748b; color: white; }
+        .badge-pro { background: #f59e0b; color: black; }
     </style>
 </head>
 <body>
 
-    <div class="admin-container">
-        <div class="admin-header">
-            <div>
-                <h2>🛡️ TRANG QUẢN TRỊ - ADMIN TỔNG</h2>
-                <p style="margin: 5px 0 0; color: var(--text-sec); font-size: 13px;">Xin chào quản trị viên: <b id="admin-name" style="color: #fff;"></b></p>
-            </div>
-            <button class="logout-btn" onclick="logout()">Đăng Xuất</button>
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>🛠️ Quản Trị Viên - Kích Hoạt Tài Khoản Pro Từ Xa</h2>
+        <div>
+            <button class="btn" style="background: #3b82f6; color: white; margin-right: 10px;" onclick="window.location.href='dashboard.html'">Vào Trang Chính (Dashboard)</button>
+            <button class="btn" style="background: #ef4444; color: white;" onclick="logout()">Đăng Xuất</button>
         </div>
-
-        <h3>Danh sách tài khoản trong hệ thống:</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Tên tài khoản</th>
-                    <th>Email</th>
-                    <th>Phân quyền (Role)</th>
-                </tr>
-            </thead>
-            <tbody id="user-list">
-                <!-- Dữ liệu user sẽ được nạp tự động qua JavaScript -->
-            </tbody>
-        </table>
     </div>
+    <p style="color: #94a3b8;">Danh sách khách hàng đã đăng ký trên hệ thống:</p>
 
-    <script>
-        // Kiểm tra quyền Admin khi vừa vào trang
-        const role = localStorage.getItem('role');
-        const currentUser = localStorage.getItem('currentUser');
+    <table>
+        <thead>
+            <tr>
+                <th>Tên Đăng Nhập</th>
+                <th>Email</th>
+                <th>Gói Cước Hiện Tại</th>
+                <th>Thao Tác Kích Hoạt Từ Xa</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody">
+            <!-- Load bằng JS -->
+        </tbody>
+    </table>
+</div>
 
-        if (role !== 'admin') {
-            alert('Cảnh báo: Bạn không có quyền truy cập trang quản trị này!');
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('admin-name').innerText = currentUser;
-            loadUsers();
-        }
+<script>
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert('Bạn không có quyền truy cập trang này!');
+        window.location.href = 'login.html';
+    }
 
-        // Lấy danh sách user từ Server Backend
-        async function loadUsers() {
-            try {
-                const res = await fetch('https://audiopool-backend.onrender.com/api/admin/users');
-                const data = await res.json();
-                if (data.success) {
-                    const tbody = document.getElementById('user-list');
-                    tbody.innerHTML = '';
-                    data.users.forEach(u => {
-                        const roleBadge = u.role === 'admin' 
-                            ? `<span class="badge-admin">👑 ADMIN TỔNG</span>` 
-                            : `<span class="badge-user">👤 User thường</span>`;
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${u.username}</td>
-                                <td>${u.email}</td>
-                                <td>${roleBadge}</td>
-                            </tr>
-                        `;
-                    });
-                }
-            } catch (e) {
-                alert('Không thể tải danh sách tài khoản từ máy chủ!');
+    async function loadUsersList() {
+        try {
+            const res = await fetch('https://audiopool-backend.onrender.com/api/admin/users');
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('userTableBody');
+                tbody.innerHTML = '';
+                data.users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const isPro = user.package && user.package !== 'free';
+                    
+                    tr.innerHTML = `
+                        <td><b>${user.username}</b></td>
+                        <td>${user.email}</td>
+                        <td><span class="badge ${isPro ? 'badge-pro' : 'badge-free'}">${isPro ? 'PRO VIP 💎' : 'FREE'}</span></td>
+                        <td>
+                            ${isPro ? '<span style="color: #10b981; font-weight: bold;">Đã là Pro</span>' : `<button class="btn btn-activate" onclick="upgradeUser('${user.username}')">⚡ Kích Hoạt Pro</button>`}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             }
+        } catch (e) {
+            alert('Không thể tải danh sách người dùng từ máy chủ!');
         }
+    }
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+    async function upgradeUser(username) {
+        if (!confirm(`Bạn có chắc muốn kích hoạt tài khoản "${username}" lên bản Pro vĩnh viễn không?`)) return;
+
+        try {
+            const res = await fetch('https://audiopool-backend.onrender.com/api/admin/upgrade-pro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadUsersList();
+        } catch (e) {
+            alert('Lỗi kết nối máy chủ!');
         }
-    </script>
+    }
+
+    function logout() {
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+    }
+
+    loadUsersList();
+</script>
+
 </body>
 </html>
