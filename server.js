@@ -232,4 +232,4 @@ app.post('/api/admin/upgrade-pro', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server đang chạy trên port ${PORT}`));s
+app.listen(PORT, '0.0.0.0', () => console.log(`Server đang chạy trên port ${PORT}`));
