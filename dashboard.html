@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUDIO POOL PRO - Bảng Điều Khiển</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-app: #090d16; --bg-sidebar: #111827; --accent-purple: #8b5cf6; 
+            --accent-green: #10b981; --accent-red: #ef4444; --accent-gold: #f59e0b;
+            --text-main: #f3f4f6; --text-sec: #9ca3af; --border-sub: rgba(255, 255, 255, 0.08);
+        }
+        body { margin: 0; background: var(--bg-app); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 20px; display: flex; gap: 20px; }
+        
+        .column { display: flex; flex-direction: column; gap: 20px; }
+        .col-left { width: 320px; }
+        .col-right { flex: 1; }
+
+        .box { background: var(--bg-sidebar); border: 1px solid var(--border-sub); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .box-title { font-size: 16px; font-weight: 700; color: var(--accent-purple); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: #fff; transition: 0.2s; font-size: 13px; }
+        .btn:hover { opacity: 0.8; }
+        .btn-free { background: #374151; }
+        .btn-pro { background: var(--accent-gold); color: #000; }
+        .btn-danger { background: var(--accent-red); }
+        .btn-success { background: var(--accent-green); }
+        .btn-admin { background: #38bdf8; color: #000; }
+
+        .key-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .key-item { background: #1f2937; border: 1px solid #374151; border-radius: 8px; height: 60px; display: flex; justify-content: center; align-items: center; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .key-item:hover { background: var(--accent-purple); border-color: var(--accent-purple); }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; }
+        .badge-free { background: #6b7280; }
+        .badge-pro { background: var(--accent-gold); color: #000; }
+        .badge-admin { background: #38bdf8; color: #000; }
+    </style>
+</head>
+<body>
+
+    <!-- CỘT TRÁI: Thông tin & Tính năng cơ bản -->
+    <div class="column col-left">
+        <div class="box">
+            <div class="box-title">👤 Thông tin tài khoản</div>
+            <p style="margin: 0 0 10px 0;">Xin chào, <b id="usernameDisplay" style="color: var(--accent-green);">...</b></p>
+            <p style="margin: 0 0 15px 0;">Gói cước: <span id="packageBadge" class="badge badge-free">FREE</span></p>
+            
+            <!-- Nút vào trang Admin (Chỉ hiện khi tài khoản là admin) -->
+            <button id="adminBtn" class="btn btn-admin" style="width: 100%; margin-bottom: 8px; display: none;" onclick="window.location.href='admin.html'">🛠️ Mở Trang Admin</button>
+            <button class="btn btn-free" style="width: 100%;" onclick="logout()">Đăng xuất</button>
+        </div>
+
+        <div class="box">
+            <div class="box-title">🎵 Thư viện & Phát nhạc</div>
+            <p style="font-size: 13px; color: var(--text-sec);">Tính năng miễn phí cho mọi tài khoản.</p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-free" onclick="alert('Đang mở thư viện nhạc...')">📂 Mở thư viện nhạc</button>
+                <button class="btn btn-success" onclick="alert('▶️ Đang phát nhạc nền...')">▶️ Phát nhạc</button>
+            </div>
+        </div>
+
+        <div class="box" style="border-color: #374151;">
+            <div class="box-title">🗑️ Thùng rác</div>
+            <p style="font-size: 13px; color: var(--text-sec);">Quản lý các mục đã xóa.</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-danger" style="flex: 1;" onclick="alert('Đã xóa tệp thành công!')">Xóa</button>
+                <button class="btn btn-free" style="flex: 1;" onclick="alert('Đã khôi phục tệp từ thùng rác!')">Khôi phục</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: 16 Key & Tính năng Pro -->
+    <div class="column col-right">
+        <div class="box">
+            <div class="box-title">
+                <span>🎛️ Bảng Điều Khiển Key</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-pro" onclick="handleProAction('Thêm Key Mới')">➕ Thêm Key Mới (Pro)</button>
+                    <button class="btn btn-pro" onclick="handleProAction('Di Chuyển Vị Trí')">↔️ Đổi Vị Trí (Pro)</button>
+                </div>
+            </div>
+            
+            <p style="font-size: 13px; color: var(--text-sec); margin-bottom: 20px;">16 Key cơ bản (Bản Thường sử dụng miễn phí)</p>
+            
+            <div class="key-grid" id="keyGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Kiểm tra đăng nhập
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('usernameDisplay').innerText = currentUser.username;
+        const badge = document.getElementById('packageBadge');
+        const adminBtn = document.getElementById('adminBtn');
+
+        // Phân quyền hiển thị giao diện
+        if (currentUser.role === 'admin') {
+            badge.innerText = 'ADMIN TỔNG 👑';
+            badge.className = 'badge badge-admin';
+            adminBtn.style.display = 'block'; // Hiện nút quản trị
+        } else if (currentUser.package && currentUser.package !== 'free') {
+            badge.innerText = 'PRO VIP 💎';
+            badge.className = 'badge badge-pro';
+        }
+
+        // Render 16 key cơ bản
+        const keyGrid = document.getElementById('keyGrid');
+        for (let i = 1; i <= 16; i++) {
+            const keyBtn = document.createElement('div');
+            keyBtn.className = 'key-item';
+            keyBtn.innerText = `Key ${i}`;
+            keyBtn.onclick = () => {
+                alert(`Bạn vừa bấm phím cơ bản: Key ${i}`);
+            };
+            keyGrid.appendChild(keyBtn);
+        }
+
+        // Hàm kiểm tra và chặn tài khoản Free khi bấm tính năng Pro
+        function handleProAction(actionName) {
+            // Nếu là Admin hoặc đã kích hoạt Pro -> Cho dùng thoải mái
+            if (currentUser.role === 'admin' || (currentUser.package && currentUser.package !== 'free')) {
+                alert(`💎 Đang thực hiện tính năng PRO: ${actionName} thành công!`);
+                return;
+            }
+
+            // Nếu là tài khoản Free -> Chặn lại và hiện bảng mời mua hàng dẫn qua Zalo/Facebook
+            const msg = `❌ Bạn đang dùng bản Free.\n\nTính năng "${actionName}" chỉ dành cho tài khoản PRO!\n\n👉 Bấm [OK] để nhắn tin Zalo mua gói.\n👉 Bấm [Cancel] để liên hệ qua Facebook.`;
+            
+            if (confirm(msg)) {
+                window.open('https://zalo.me/09xxxxxxxx', '_blank'); // Thay số Zalo của bạn
+            } else {
+                window.open('https://facebook.com/your_profile', '_blank'); // Thay link Facebook của bạn
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

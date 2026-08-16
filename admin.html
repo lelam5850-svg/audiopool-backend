@@ -15,6 +15,7 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .badge-free { background: #64748b; color: white; }
         .badge-pro { background: #f59e0b; color: black; }
+        .badge-admin { background: #38bdf8; color: black; }
     </style>
 </head>
 <body>
@@ -27,19 +28,19 @@
             <button class="btn" style="background: #ef4444; color: white;" onclick="logout()">Đăng Xuất</button>
         </div>
     </div>
-    <p style="color: #94a3b8;">Danh sách khách hàng đã đăng ký trên hệ thống:</p>
+    <p style="color: #94a3b8;">Danh sách tài khoản và khách hàng đã đăng ký trên hệ thống:</p>
 
     <table>
         <thead>
             <tr>
                 <th>Tên Đăng Nhập</th>
                 <th>Email</th>
-                <th>Gói Cước Hiện Tại</th>
+                <th>Gói Cước / Vai Trò</th>
                 <th>Thao Tác Kích Hoạt Từ Xa</th>
             </tr>
         </thead>
         <tbody id="userTableBody">
-            <!-- Load bằng JS -->
+            <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Đang tải dữ liệu...</td></tr>
         </tbody>
     </table>
 </div>
@@ -53,28 +54,51 @@
 
     async function loadUsersList() {
         try {
+            // Sử dụng đường dẫn API đầy đủ hoặc tương đối khớp với backend của bạn
             const res = await fetch('https://audiopool-backend.onrender.com/api/admin/users');
             const data = await res.json();
-            if (data.success) {
-                const tbody = document.getElementById('userTableBody');
-                tbody.innerHTML = '';
+            
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            if (data.success && data.users && data.users.length > 0) {
                 data.users.forEach(user => {
                     const tr = document.createElement('tr');
+                    const isAdmin = user.role === 'admin';
                     const isPro = user.package && user.package !== 'free';
                     
+                    let badgeHTML = '';
+                    if (isAdmin) {
+                        badgeHTML = '<span class="badge badge-admin">ADMIN TỔNG 👑</span>';
+                    } else if (isPro) {
+                        badgeHTML = '<span class="badge badge-pro">PRO VIP 💎</span>';
+                    } else {
+                        badgeHTML = '<span class="badge badge-free">FREE</span>';
+                    }
+
+                    let actionHTML = '';
+                    if (isAdmin) {
+                        actionHTML = '<span style="color: #38bdf8; font-weight: bold;">Quản trị tối cao</span>';
+                    } else if (isPro) {
+                        actionHTML = '<span style="color: #10b981; font-weight: bold;">Đã là Pro</span>';
+                    } else {
+                        actionHTML = `<button class="btn btn-activate" onclick="upgradeUser('${user.username}')">⚡ Kích Hoạt Pro</button>`;
+                    }
+
                     tr.innerHTML = `
                         <td><b>${user.username}</b></td>
                         <td>${user.email}</td>
-                        <td><span class="badge ${isPro ? 'badge-pro' : 'badge-free'}">${isPro ? 'PRO VIP 💎' : 'FREE'}</span></td>
-                        <td>
-                            ${isPro ? '<span style="color: #10b981; font-weight: bold;">Đã là Pro</span>' : `<button class="btn btn-activate" onclick="upgradeUser('${user.username}')">⚡ Kích Hoạt Pro</button>`}
-                        </td>
+                        <td>${badgeHTML}</td>
+                        <td>${actionHTML}</td>
                     `;
                     tbody.appendChild(tr);
                 });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có tài khoản nào khác trong hệ thống.</td></tr>`;
             }
         } catch (e) {
-            alert('Không thể tải danh sách người dùng từ máy chủ!');
+            console.error(e);
+            document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444;">Không thể kết nối tới máy chủ để tải danh sách người dùng!</td></tr>`;
         }
     }
 

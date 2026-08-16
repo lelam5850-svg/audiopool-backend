@@ -14,23 +14,31 @@ let otpStorage = {};
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 function loadUsers() {
+    const defaultAdmin = [{
+        username: "admin",
+        email: "admin@audiopoolpro.io.vn",
+        password: "Admin@123",
+        role: "admin",
+        package: "pro_lifetime",
+        expireDate: null
+    }];
+
     if (!fs.existsSync(USERS_FILE)) {
-        // Khởi tạo sẵn tài khoản Admin/Pro mặc định cho bạn
-        const defaultAdmin = [{
-            username: "admin",
-            email: "admin@audiopoolpro.io.vn",
-            password: "Admin@123",
-            role: "admin",
-            package: "pro_lifetime",
-            expireDate: null
-        }];
         saveUsers(defaultAdmin);
         return defaultAdmin;
     }
     try { 
-        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); 
+        const data = fs.readFileSync(USERS_FILE, 'utf8');
+        let users = JSON.parse(data);
+        
+        // Đảm bảo luôn tồn tại tài khoản admin tổng trong danh sách
+        if (!users.some(u => u.role === 'admin' || u.username === 'admin')) {
+            users.unshift(defaultAdmin[0]);
+            saveUsers(users);
+        }
+        return users;
     } catch (err) { 
-        return []; 
+        return defaultAdmin; 
     }
 }
 
@@ -103,7 +111,7 @@ app.post('/api/forgot-password', async (req, res) => {
     }
 });
 
-// 3. API Đăng ký tài khoản (Kiểm tra độ mạnh mật khẩu)
+// 3. API Đăng ký tài khoản
 app.post('/api/register', (req, res) => {
     const { email, otp, username, password } = req.body;
     const record = otpStorage[email];
@@ -145,7 +153,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 5. API Đổi mật khẩu mới (Chặn trùng mật khẩu cũ & kiểm tra ký tự đặc biệt)
+// 5. API Đổi mật khẩu mới
 app.post('/api/reset-password', (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
@@ -198,4 +206,4 @@ app.post('/api/admin/upgrade-pro', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server đang chạy trên port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên port ${PORT}`));
