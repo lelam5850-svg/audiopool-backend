@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoundStudio - Trang Chính Mixer</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        let currentUser = null;
+        try {
+            currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        } catch (e) {
+            currentUser = null;
+        }
+
+        if (!currentUser) {
+            window.location.href = 'login.html';
+        }
+
+        const userPackage = typeof currentUser === 'object' ? currentUser.package : 'free';
+        const userRole = typeof currentUser === 'object' ? currentUser.role : localStorage.getItem('role');
+        const isFree = !userPackage || userPackage === 'free';
+        const isAdmin = userRole === 'admin';
+
+        function checkProAccess(actionName) {
+            if (!isFree || isAdmin) {
+                return true; // Cho phép Pro / Admin dùng full
+            }
+            if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển hướng đến Zalo mua bản Pro ngay!`)) {
+                window.open('https://zalo.me/84901221001', '_blank');
+            }
+            return false;
+        }
+    </script>
+
     <style>
         :root {
             --bg-app: #090d16;
