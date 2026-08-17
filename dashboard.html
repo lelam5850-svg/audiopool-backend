@@ -86,17 +86,29 @@
     </div>
 
     <script>
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        // Kiểm tra và đọc dữ liệu phân quyền an toàn từ localStorage
+        let currentUser = null;
+        try {
+            currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        } catch (e) {
+            currentUser = null;
+        }
+
         if (!currentUser) {
             window.location.href = 'login.html';
         }
 
-        document.getElementById('usernameDisplay').innerText = currentUser.username;
+        // Hỗ trợ đồng bộ nếu dữ liệu user lưu dạng chuỗi cũ
+        const username = typeof currentUser === 'object' ? currentUser.username : currentUser;
+        const userRole = typeof currentUser === 'object' ? currentUser.role : localStorage.getItem('role');
+        const userPackage = typeof currentUser === 'object' ? currentUser.package : 'free';
+
+        document.getElementById('usernameDisplay').innerText = username;
         const badge = document.getElementById('packageBadge');
         const adminBtn = document.getElementById('adminBtn');
 
-        const isFree = !currentUser.package || currentUser.package === 'free';
-        const isAdmin = currentUser.role === 'admin';
+        const isFree = !userPackage || userPackage === 'free';
+        const isAdmin = userRole === 'admin';
 
         if (isAdmin) {
             badge.innerText = 'ADMIN TỔNG 👑';
@@ -121,7 +133,7 @@
             keyGrid.appendChild(keyBtn);
         }
 
-        // Xử lý phân quyền tính năng Pro
+        // Xử lý phân quyền tính năng Pro / Free
         function handleProAction(actionName) {
             // Nếu là tài khoản Pro hoặc Admin thì cho dùng thoải mái
             if (!isFree || isAdmin) {
@@ -129,7 +141,7 @@
                 return;
             }
 
-            // Nếu là tài khoản Thường (Free): Thông báo và chuyển hướng sang Zalo mua bản Pro
+            // Nếu là tài khoản Thường (Free): Thông báo giới hạn và chuyển hướng sang Zalo mua gói Pro
             if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển hướng đến Zalo mua bản Pro ngay!`)) {
                 window.open('http://zaloapp.com/qr/p/1gemukvum5sod', '_blank');
             }
@@ -137,6 +149,8 @@
 
         function logout() {
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('role');
+            localStorage.removeItem('isLoggedIn');
             window.location.href = 'login.html';
         }
     </script>
