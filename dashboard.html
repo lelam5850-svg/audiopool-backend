@@ -75,11 +75,11 @@
                 <span>🎛️ Bảng Điều Khiển Key</span>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-pro" onclick="handleProAction('Thêm Key Mới')">➕ Thêm Key Mới</button>
-                    <button class="btn btn-pro" onclick="handleProAction('Đổi Tên & Vị Trí Key')">✏️ Đổi Tên/Vị Trí</button>
+                    <button class="btn btn-pro" onclick="handleProAction('Đổi Vị Trí Key')">↔️ Đổi Vị Trí</button>
                 </div>
             </div>
             
-            <p id="subTitleDesc" style="font-size: 13px; color: var(--text-sec); margin-bottom: 20px;">16 Key cơ bản (Bản Thường cố định tên và vị trí)</p>
+            <p id="subTitleDesc" style="font-size: 13px; color: var(--text-sec); margin-bottom: 20px;">16 Key cơ bản</p>
             
             <div class="key-grid" id="keyGrid"></div>
         </div>
@@ -110,35 +110,29 @@
             badge.className = 'badge badge-free';
         }
 
-        // Bản Free cố định 16 phím, Pro có thể mở rộng nhiều hơn
-        const totalKeys = isFree ? 16 : 20; 
         const keyGrid = document.getElementById('keyGrid');
-        
-        if (!isFree) {
-            document.getElementById('subTitleDesc').innerText = 'Bảng Pro Full Chức Năng (Thêm key, đổi tên và đổi vị trí thoải mái)';
-        }
-
-        for (let i = 1; i <= totalKeys; i++) {
+        for (let i = 1; i <= 16; i++) {
             const keyBtn = document.createElement('div');
             keyBtn.className = 'key-item';
             keyBtn.innerText = `Key ${i}`;
-            
-            // Tài khoản Free chỉ bấm để dùng, không cho đổi tên/cấu hình
             keyBtn.onclick = () => {
                 alert(`Bạn vừa bấm phím: Key ${i}`);
             };
             keyGrid.appendChild(keyBtn);
         }
 
-        // Kiểm tra quyền khi bấm nút thêm key hoặc đổi tên/vị trí
+        // Xử lý phân quyền tính năng Pro
         function handleProAction(actionName) {
+            // Nếu là tài khoản Pro hoặc Admin thì cho dùng thoải mái
             if (!isFree || isAdmin) {
-                alert(`💎 [PRO FULL CHỨC NĂNG] Đang thực hiện: ${actionName} thành công!`);
+                alert(`💎 Đã thực hiện tính năng PRO: ${actionName} thành công!`);
                 return;
             }
 
-            // Nếu là tài khoản Free thì thông báo giới hạn tính năng đổi tên/thêm key
-            alert(`❌ Tài khoản FREE chỉ sử dụng cố định 16 phím, không thể thêm mới hoặc đổi tên/vị trí key.\n\nVui lòng nâng cấp lên bản PRO để mở khóa Full chức năng!`);
+            // Nếu là tài khoản Thường (Free): Thông báo và chuyển hướng sang Zalo mua bản Pro
+            if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển hướng đến Zalo mua bản Pro ngay!`)) {
+                window.open('http://zaloapp.com/qr/p/1gemukvum5sod', '_blank');
+            }
         }
 
         function logout() {
