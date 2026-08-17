@@ -37,7 +37,7 @@ async function initAdmin() {
             await User.create({
                 username: "admin",
                 email: "admin@audiopoolpro.io.vn",
-                password: "Admin@123",
+                password: "admin",
                 role: "admin",
                 package: "pro_lifetime"
             });

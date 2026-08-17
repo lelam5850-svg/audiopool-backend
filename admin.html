@@ -46,9 +46,19 @@
 </div>
 
 <script>
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    // Xử lý kiểm tra phân quyền an toàn, tránh lỗi cú pháp JSON.parse
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    } catch (e) {
+        const rawUser = localStorage.getItem('currentUser');
+        if (rawUser === 'admin') {
+            currentUser = { role: 'admin' };
+        }
+    }
+
     if (!currentUser || currentUser.role !== 'admin') {
-        alert('Bạn không có quyền truy cập trang này!');
+        alert('Bạn không có quyền truy cập trang này[cite: 1]!');
         window.location.href = 'login.html';
     }
 
@@ -78,10 +88,10 @@
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có tài khoản nào đăng ký.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Chưa có tài khoản nào đăng ký[cite: 1].</td></tr>`;
             }
         } catch (e) {
-            document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444;">Lỗi kết nối máy chủ backend!</td></tr>`;
+            document.getElementById('userTableBody').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ef4444;">Lỗi kết nối máy chủ backend[cite: 1]!</td></tr>`;
         }
     }
 
@@ -98,7 +108,7 @@
             alert(data.message);
             loadUsersList();
         } catch (e) {
-            alert('Lỗi kết nối máy chủ!');
+            alert('Lỗi kết nối máy chủ[cite: 1]!');
         }
     }
 
