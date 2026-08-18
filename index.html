@@ -6,6 +6,7 @@
     <title>SoundStudio - Trang Chính Mixer</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
+        // Kiểm tra bảo mật và lấy thông tin user chuẩn xác từ localStorage
         let currentUser = null;
         try {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -13,21 +14,25 @@
             currentUser = null;
         }
 
-        if (!currentUser) {
+        if (!localStorage.getItem('isLoggedIn') || !currentUser) {
             window.location.href = 'login.html';
         }
 
-        const userPackage = typeof currentUser === 'object' ? currentUser.package : 'free';
-        const userRole = typeof currentUser === 'object' ? currentUser.role : localStorage.getItem('role');
-        const isFree = !userPackage || userPackage === 'free';
+        // Khớp với Backend: package có thể là 'free' hoặc 'pro_lifetime'
+        const userPackage = typeof currentUser === 'object' ? (currentUser.package || 'free') : 'free';
+        const userRole = typeof currentUser === 'object' ? (currentUser.role || 'user') : (localStorage.getItem('role') || 'user');
+        
         const isAdmin = userRole === 'admin';
+        const isPro = userPackage === 'pro_lifetime' || userPackage === 'pro';
+        const isFree = !isPro && !isAdmin;
 
+        // Hàm kiểm tra quyền: Tài khoản Thường (Free) bị chặn và tự động mở link Zalo mua Pro
         function checkProAccess(actionName) {
             if (!isFree || isAdmin) {
-                return true; // Cho phép Pro / Admin dùng full
+                return true; // Cho phép Pro hoặc Admin dùng full chức năng
             }
             if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển hướng đến Zalo mua bản Pro ngay!`)) {
-                window.open('https://zalo.me/84901221001', '_blank');
+                window.open('http://zaloapp.com/qr/p/1gemukvum5sod', '_blank');
             }
             return false;
         }
@@ -172,7 +177,6 @@
         .tl-select-checkbox.show { display: inline-block; }
 
         .tl-key-badge { font-weight: 700; font-size: 12px; color: #fff; background: var(--accent-purple); padding: 6px 12px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .tl-key-input { background: transparent; border: 1px dashed #fff; color: #fff; font-size: 12px; font-weight: 700; width: 60px; padding: 2px 4px; outline: none; border-radius: 4px; }
         
         .tl-play-btn {
             width: 40px; height: 40px; border-radius: 10px; background: var(--accent-purple); border: none;
@@ -239,17 +243,10 @@
 </head>
 <body>
 
-    <!-- Kiểm tra bảo mật: Chưa đăng nhập tự động đá về trang login.html -->
-    <script>
-        if(localStorage.getItem('isLoggedIn') !== 'true') {
-            window.location.href = 'login.html';
-        }
-    </script>
-
     <aside class="studio-sidebar">
         <div class="studio-logo">🎧 AUDIO POOL PRO</div>
 
-        <button class="add-channel-btn" type="button" onclick="promptAddChannel()">+ THÊM KÊNH MỚI</button>
+        <button class="add-channel-btn" type="button" onclick="secureAddChannel()">+ THÊM KÊNH MỚI</button>
 
         <div class="studio-drawer" style="flex: 2;">
             <div class="lib-header">
@@ -269,7 +266,7 @@
                 <div style="font-size: 11px; color: var(--text-sec); padding: 10px; text-align: center;">Trống. Bấm [+ Tải Nhạc].</div>
             </div>
 
-            <button class="lib-btn primary" onclick="applyLibraryToDecks()">🚀 ÁP DỤNG VÀO KÊNH</button>
+            <button class="lib-btn primary" onclick="secureApplyLibrary()">🚀 ÁP DỤNG VÀO KÊNH</button>
         </div>
 
         <div class="studio-drawer" style="max-height: 140px;">
@@ -287,6 +284,7 @@
         <header class="studio-header">
             <h1>Bàn Điều Khiển Trackline Mixer</h1>
             <div class="master-audio-controls">
+                <div id="adminBadgeContainer" style="margin-right: 10px;"></div>
                 <button class="master-btn" id="btnMuteAll" type="button" onclick="setMasterMute(true)">🔇 Tắt Tổng</button>
                 <button class="master-btn" id="btnUnmuteAll" type="button" onclick="setMasterMute(false)">🔊 Mở Tổng</button>
                 <button class="master-btn" style="background:rgba(239,68,68,0.2); color:#fca5a5;" type="button" onclick="handleLogout()">🚪 Đăng Xuất</button>
@@ -312,7 +310,7 @@
 
             <div class="toolbar-rack">
                 <input type="text" class="search-box" id="searchChannelInput" placeholder="🔍 Tìm kiếm kênh (nhập tên phím hoặc file)..." oninput="renderGrid()">
-                <button class="batch-del-btn" id="batchDelBtn" type="button" onclick="deleteSelectedChannels()">🗑️ XÓA KÊNH ĐÃ CHỌN</button>
+                <button class="batch-del-btn" id="batchDelBtn" type="button" onclick="secureDeleteChannels()">🗑️ XÓA KÊNH ĐÃ CHỌN</button>
             </div>
 
             <div class="tracks-rack" id="decksGrid"></div>
@@ -344,7 +342,19 @@
     <div class="studio-toast" id="toastMessage">Thành công!</div>
 
     <script>
+        // Hiển thị nút trang Quản Trị nếu tài khoản là Admin
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isAdmin) {
+                const badgeContainer = document.getElementById('adminBadgeContainer');
+                if (badgeContainer) {
+                    badgeContainer.innerHTML = `<button class="master-btn" style="background:rgba(56,189,248,0.2); color:#38bdf8; border-color:rgba(56,189,248,0.4);" onclick="window.location.href='admin.html'">🛠️ Trang Admin</button>`;
+                }
+            }
+        });
+
         function handleLogout() {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('role');
             localStorage.removeItem('isLoggedIn');
             window.location.href = 'login.html';
         }
@@ -407,6 +417,12 @@
             });
         }
 
+        // Bảo vệ tính năng Thêm Kênh
+        function secureAddChannel() {
+            if (!checkProAccess('Thêm Kênh Mới')) return;
+            promptAddChannel();
+        }
+
         function promptAddChannel() {
             let keyInput = prompt("Nhập một phím bất kỳ chưa gán (Ví dụ: A, Z, X, 8, F...):");
             if(!keyInput) return;
@@ -434,6 +450,12 @@
             renderGrid();
             saveToStorage();
             showToast(`Đã thêm kênh [${keyInput}]!`);
+        }
+
+        // Bảo vệ tính năng Xóa Kênh
+        function secureDeleteChannels() {
+            if (!checkProAccess('Xóa Kênh')) return;
+            deleteSelectedChannels();
         }
 
         function deleteSelectedChannels() {
@@ -574,6 +596,12 @@
             renderLibrary();
         }
 
+        // Bảo vệ tính năng Áp dụng vào kênh
+        function secureApplyLibrary() {
+            if (!checkProAccess('Áp Dụng Vào Kênh')) return;
+            applyLibraryToDecks();
+        }
+
         function applyLibraryToDecks() {
             if(selectedLibIds.length === 0) {
                 alert("Vui lòng click chọn ít nhất 1 bài trong Thư viện để áp dụng!");
@@ -665,11 +693,17 @@
                 line.draggable = true;
                 line.dataset.index = index;
 
+                // Bảo vệ tính năng Kéo thả đổi vị trí kênh
                 line.addEventListener('dragstart', (e) => {
+                    if (!checkProAccess('Đổi Vị Trí Kênh')) {
+                        e.preventDefault();
+                        return;
+                    }
                     draggedIndex = index;
                     e.dataTransfer.effectAllowed = 'move';
                     setTimeout(() => line.classList.add('dragging'), 0);
                 });
+
                 line.addEventListener('dragend', () => {
                     line.classList.remove('dragging');
                     draggedIndex = null;
@@ -677,6 +711,7 @@
                 line.addEventListener('dragover', (e) => { e.preventDefault(); });
                 line.addEventListener('drop', (e) => {
                     e.preventDefault();
+                    if (!checkProAccess('Đổi Vị Trí Kênh')) return;
                     if (draggedIndex === null || draggedIndex === index) return;
                     const movedItem = decksData.splice(draggedIndex, 1)[0];
                     decksData.splice(index, 0, movedItem);
@@ -708,7 +743,7 @@
 
                 line.innerHTML = `
                     <input type="checkbox" class="tl-select-checkbox ${isSelectionMode ? 'show' : ''}" data-id="${deck.id}">
-                    <div class="tl-key-badge" ondblclick="enableInlineEdit(this, ${deck.id})" title="Nhấn đúp để sửa tên">${deck.keyName}</div>
+                    <div class="tl-key-badge" onclick="secureRenameKey(${deck.id})" title="Nhấn để sửa tên">${deck.keyName}</div>
                     <button class="tl-play-btn ${deck.isPlaying ? 'stop-mode' : ''}" type="button" onclick="togglePlay(${deck.id})">
                         ${deck.isPlaying ? '■' : '▶'}
                     </button>
@@ -734,6 +769,21 @@
                 grid.appendChild(line);
             });
             updateStats();
+        }
+
+        // Bảo vệ tính năng Đổi tên Key
+        function secureRenameKey(deckId) {
+            if (!checkProAccess('Đổi Tên Key')) return;
+            const deck = decksData.find(d => d.id === deckId);
+            if(!deck) return;
+            let newKey = prompt("Nhập tên phím mới:", deck.rawKey);
+            if(!newKey) return;
+            newKey = newKey.trim().toUpperCase();
+            deck.rawKey = newKey;
+            deck.keyName = `KEY [${newKey}]`;
+            renderGrid();
+            saveToStorage();
+            showToast("Đã đổi tên phím thành công!");
         }
 
         function openModal(deckId) {
