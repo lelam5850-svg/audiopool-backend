@@ -24,7 +24,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>🛠️ Quản Trị Viên - Kích Hoạt Tài Khoản Pro Từ Xa</h2>
         <div>
-            <button class="btn" style="background: #3b82f6; color: white; margin-right: 10px;" onclick="window.location.href='dashboard.html'">Vào Trang Chính</button>
+            <!-- Đã sửa dẫn trực tiếp về index.html thay vì dashboard.html cũ -->
+            <button class="btn" style="background: #3b82f6; color: white; margin-right: 10px;" onclick="window.location.href='index.html'">Vào Trang Chính</button>
             <button class="btn" style="background: #ef4444; color: white;" onclick="logout()">Đăng Xuất</button>
         </div>
     </div>
@@ -35,7 +36,7 @@
             <tr>
                 <th>Tên Đăng Nhập</th>
                 <th>Email</th>
-                <th>Gói Cước / Vai Trô</th>
+                <th>Gói Cước / Vai Trò</th>
                 <th>Thao Tác Kích Hoạt Từ Xa</th>
             </tr>
         </thead>
@@ -114,6 +115,7 @@
 
     function logout() {
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('isLoggedIn');
         window.location.href = 'login.html';
     }
 
