@@ -18,7 +18,6 @@
             window.location.href = 'login.html';
         }
 
-        // Khớp với Backend: package có thể là 'free' hoặc 'pro_lifetime'
         const userPackage = typeof currentUser === 'object' ? (currentUser.package || 'free') : 'free';
         const userRole = typeof currentUser === 'object' ? (currentUser.role || 'user') : (localStorage.getItem('role') || 'user');
         
@@ -26,13 +25,13 @@
         const isPro = userPackage === 'pro_lifetime' || userPackage === 'pro';
         const isFree = !isPro && !isAdmin;
 
-        // Hàm kiểm tra quyền: Tài khoản Thường (Free) bị chặn và tự động mở link Zalo mua Pro
+        // Hàm kiểm tra quyền: Tài khoản Thường (Free) bị chặn và chuyển hướng sang trang thanh toán riêng (pricing.html)
         function checkProAccess(actionName) {
             if (!isFree || isAdmin) {
                 return true; // Cho phép Pro hoặc Admin dùng full chức năng
             }
-            if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển hướng đến Zalo mua bản Pro ngay!`)) {
-                window.open('https://zalo.me/84901221001', '_blank');
+            if (confirm(`❌ Tính năng "${actionName}" chỉ dành cho tài khoản PRO.\n\n👉 Bấm [OK] để chuyển đến trang nạp tiền nâng cấp Pro!`)) {
+                window.location.href = 'pricing.html';
             }
             return false;
         }
@@ -116,7 +115,7 @@
         }
         .add-channel-btn:hover { background: #059669; }
 
-        .trash-container { overflow-y: auto; max-height: 100px; display: flex; flex-direction: column; gap: 4px; }
+        .trash-container { overflow-y: auto; max-height: 140px; display: flex; flex-direction: column; gap: 4px; }
         .trash-item {
             background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);
             padding: 6px 10px; border-radius: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #fca5a5;
@@ -140,6 +139,30 @@
         .master-btn:hover { background: rgba(255,255,255,0.1); }
         .master-btn.active-mute { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
         .master-btn.active-unmute { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #6ee7b7; }
+
+        /* Giao diện User Dropdown Menu */
+        .user-dropdown-container { position: relative; display: inline-block; }
+        .user-avatar-btn {
+            background: var(--bg-track); border: 1px solid var(--border-sub); color: var(--text-main);
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .user-avatar-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-purple); }
+        .user-badge-tag { padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; background: #64748b; color: #fff; }
+        .user-badge-tag.pro { background: #f59e0b; color: #000; }
+        .user-badge-tag.admin { background: #38bdf8; color: #000; }
+
+        .dropdown-menu-box {
+            display: none; position: absolute; right: 0; top: 44px; background: var(--bg-sidebar);
+            border: 1px solid var(--border-sub); border-radius: 12px; width: 190px; z-index: 5000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); overflow: hidden;
+        }
+        .dropdown-menu-box.show { display: block; }
+        .menu-item-row { padding: 10px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.15s; border-bottom: 1px solid var(--border-sub); color: var(--text-main); }
+        .menu-item-row:last-child { border-bottom: none; }
+        .menu-item-row:hover { background: rgba(255,255,255,0.06); }
+        .menu-item-row.danger { color: #fca5a5; }
+        .menu-item-row.danger:hover { background: rgba(239, 68, 68, 0.15); }
 
         .studio-content { padding: 24px 32px; flex: 1; overflow-y: auto; }
 
@@ -284,10 +307,23 @@
         <header class="studio-header">
             <h1>Bàn Điều Khiển Trackline Mixer</h1>
             <div class="master-audio-controls">
-                <div id="adminBadgeContainer" style="margin-right: 10px;"></div>
+                <div id="adminBadgeContainer" style="margin-right: 5px;"></div>
                 <button class="master-btn" id="btnMuteAll" type="button" onclick="setMasterMute(true)">🔇 Tắt Tổng</button>
                 <button class="master-btn" id="btnUnmuteAll" type="button" onclick="setMasterMute(false)">🔊 Mở Tổng</button>
-                <button class="master-btn" style="background:rgba(239,68,68,0.2); color:#fca5a5;" type="button" onclick="handleLogout()">🚪 Đăng Xuất</button>
+                
+                <!-- Giao diện Menu User Dropdown -->
+                <div class="user-dropdown-container">
+                    <button class="user-avatar-btn" type="button" onclick="toggleUserDropdown(event)">
+                        👤 <span id="headerUsername">Tài khoản</span>
+                        <span class="user-badge-tag" id="headerBadgeTag">FREE</span>
+                    </button>
+                    <div class="dropdown-menu-box" id="userDropdownMenu">
+                        <div class="menu-item-row" onclick="showPricing()">💎 Nạp Tiền / Nâng Cấp Pro</div>
+                        <div class="menu-item-row" onclick="openZaloSupport()">💬 Báo Lỗi / Hỗ Trợ (Zalo)</div>
+                        <div class="menu-item-row danger" onclick="handleLogout()">🚪 Đăng Xuất</div>
+                    </div>
+                </div>
+
                 <span id="liveClock" style="font-size: 13px; color: var(--text-sec); font-weight: 600; margin-left: 10px;">00:00:00</span>
             </div>
         </header>
@@ -322,7 +358,7 @@
         </footer>
     </main>
 
-    <!-- Modal Cài đặt -->
+    <!-- Modal Cài đặt Kênh -->
     <div class="studio-modal-wrap" id="settingsModal" onclick="closeModalOutside(event)">
         <div class="studio-modal-box">
             <h3 id="modalTitle">CÀI ĐẶT KÊNH</h3>
@@ -342,15 +378,52 @@
     <div class="studio-toast" id="toastMessage">Thành công!</div>
 
     <script>
-        // Hiển thị nút trang Quản Trị nếu tài khoản là Admin
+        // Khởi tạo thông tin User lên Header (Avatar, Tên, Nhãn Badge)
         window.addEventListener('DOMContentLoaded', () => {
-            if (isAdmin) {
-                const badgeContainer = document.getElementById('adminBadgeContainer');
-                if (badgeContainer) {
-                    badgeContainer.innerHTML = `<button class="master-btn" style="background:rgba(56,189,248,0.2); color:#38bdf8; border-color:rgba(56,189,248,0.4);" onclick="window.location.href='admin.html'">🛠️ Trang Admin</button>`;
+            if (currentUser) {
+                const usernameEl = document.getElementById('headerUsername');
+                const badgeEl = document.getElementById('headerBadgeTag');
+                
+                if (usernameEl) usernameEl.innerText = currentUser.username;
+
+                if (isAdmin) {
+                    if (badgeEl) {
+                        badgeEl.innerText = 'ADMIN 👑';
+                        badgeEl.className = 'user-badge-tag admin';
+                    }
+                    const badgeContainer = document.getElementById('adminBadgeContainer');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = `<button class="master-btn" style="background:rgba(56,189,248,0.2); color:#38bdf8; border-color:rgba(56,189,248,0.4);" onclick="window.location.href='admin.html'">🛠️ Trang Admin</button>`;
+                    }
+                } else if (isPro) {
+                    if (badgeEl) {
+                        badgeEl.innerText = 'PRO VIP 💎';
+                        badgeEl.className = 'user-badge-tag pro';
+                    }
                 }
             }
         });
+
+        // Xử lý bật/tắt Dropdown Menu cá nhân
+        function toggleUserDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('userDropdownMenu');
+            if (menu) menu.classList.toggle('show');
+        }
+
+        window.addEventListener('click', () => {
+            const menu = document.getElementById('userDropdownMenu');
+            if (menu) menu.classList.remove('show');
+        });
+
+        // Chuyển hướng sang trang thanh toán riêng pricing.html[cite: 2]
+        function showPricing() {
+            window.location.href = 'pricing.html';
+        }
+
+        function openZaloSupport() {
+            window.open('https://zalo.me/84901221001', '_blank');
+        }
 
         function handleLogout() {
             localStorage.removeItem('currentUser');
@@ -417,7 +490,6 @@
             });
         }
 
-        // Bảo vệ tính năng Thêm Kênh
         function secureAddChannel() {
             if (!checkProAccess('Thêm Kênh Mới')) return;
             promptAddChannel();
@@ -452,7 +524,6 @@
             showToast(`Đã thêm kênh [${keyInput}]!`);
         }
 
-        // Bảo vệ tính năng Xóa Kênh
         function secureDeleteChannels() {
             if (!checkProAccess('Xóa Kênh')) return;
             deleteSelectedChannels();
@@ -596,7 +667,6 @@
             renderLibrary();
         }
 
-        // Bảo vệ tính năng Áp dụng vào kênh
         function secureApplyLibrary() {
             if (!checkProAccess('Áp Dụng Vào Kênh')) return;
             applyLibraryToDecks();
@@ -693,7 +763,6 @@
                 line.draggable = true;
                 line.dataset.index = index;
 
-                // Bảo vệ tính năng Kéo thả đổi vị trí kênh
                 line.addEventListener('dragstart', (e) => {
                     if (!checkProAccess('Đổi Vị Trí Kênh')) {
                         e.preventDefault();
@@ -771,7 +840,6 @@
             updateStats();
         }
 
-        // Bảo vệ tính năng Đổi tên Key
         function secureRenameKey(deckId) {
             if (!checkProAccess('Đổi Tên Key')) return;
             const deck = decksData.find(d => d.id === deckId);
