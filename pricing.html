@@ -83,10 +83,10 @@
                 </div>
             </div>
 
-            <!-- Cột phải: QR Code động cá nhân -->
+            <!-- Cột phải: QR Code động cá nhân (Đã chỉnh khung to full) -->
             <div style="background: var(--bg-track); border: 1px solid var(--border-sub); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <div style="background: white; padding: 6px; border-radius: 8px; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center;">
-                    <img id="dynamicQRImg" src="" alt="Mã QR Chuyển Khoản" style="width: 130px; height: 130px; border-radius: 4px;">
+                <div style="background: white; padding: 6px; border-radius: 8px; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;">
+                    <img id="dynamicQRImg" src="" alt="Mã QR Chuyển Khoản" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
                 </div>
 
                 <div style="width: 100%; font-size: 11px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
@@ -114,7 +114,6 @@
     </div>
 
     <script>
-        // Kiểm tra đăng nhập
         let currentUser = null;
         try {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -143,14 +142,14 @@
         function generateDynamicQR(amount) {
             const username = currentUser.username;
             const prefix = "AUDIOPTR"; 
-            const addInfo = `${prefix}${username}`; // Cú pháp nội dung chuyển khoản riêng biệt
+            const addInfo = `${prefix}${username}`; 
             
-            const bank = "MBBank";
-            const acc = "0901221001";
-            const holder = "LE+QUANG+LAM";
+            const bankId = "MB";
+            const accountNo = "0901221001";
+            const accountName = "LE QUANG LAM";
             
-            // Link VietQR của bạn đã được cập nhật chuẩn xác
-            const qrUrl = `https://vietqr.app/img?acc=${acc}&bank=${bank}&holder=${holder}&showinfo=true&amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
+            // Dùng qr_only để ảnh QR hiển thị vuông vức, to full khung không bị chữ thừa bên dưới
+            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}&accountName=${encodeURIComponent(accountName)}`;
             
             document.getElementById('dynamicQRImg').src = qrUrl;
             document.getElementById('qrSyntaxText').innerText = addInfo;
