@@ -58,9 +58,9 @@
                     <div style="font-size: 12px; color: #c4b5fd;">🔥 1 Tháng</div>
                     <div style="color: #34d399; font-weight: bold; font-size: 14px;">80.000đ</div>
                 </div>
-                <div class="price-item" id="pkg-299000" onclick="selectPackage(299000, 'Vinh Vien', this)">
+                <div class="price-item" id="pkg-150000" onclick="selectPackage(150000, 'Vinh Vien', this)">
                     <div style="font-size: 12px; color: var(--text-main);">💎 Trọn Đời</div>
-                    <div style="color: #f59e0b; font-weight: bold; font-size: 14px;">199.000đ</div>
+                    <div style="color: #f59e0b; font-weight: bold; font-size: 14px;">150.000đ</div>
                 </div>
             </div>
         </div>
@@ -143,14 +143,14 @@
         function generateDynamicQR(amount) {
             const username = currentUser.username;
             const prefix = "AUDIOPTR"; 
-            const addInfo = `${prefix}${username}`; // Cú pháp nội dung chuyển khoản riêng biệt (Ví dụ: AUDIOPTRabc)
+            const addInfo = `${prefix}${username}`; // Cú pháp nội dung chuyển khoản riêng biệt
             
             const bank = "MBBank";
             const acc = "0901221001";
             const holder = "LE+QUANG+LAM";
             
-            // Link API VietQR cá nhân của bạn tự động cập nhật số tiền và nội dung
-            const qrUrl = `https://vietqr.app/img?acc=${acc}&bank=${bank}&holder=${holder}&template=compact&showinfo=true&amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
+            // Link VietQR của bạn đã được cập nhật chuẩn xác
+            const qrUrl = `https://vietqr.app/img?acc=${acc}&bank=${bank}&holder=${holder}&showinfo=true&amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
             
             document.getElementById('dynamicQRImg').src = qrUrl;
             document.getElementById('qrSyntaxText').innerText = addInfo;
